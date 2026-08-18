@@ -7,6 +7,8 @@ venv/
 env/
 hfvenv_new/
 test.*
+old.*
+*.old
 
 # Environment / secrets
 .env
@@ -30,3 +32,8 @@ Thumbs.db
 *.xlsx
 *.xls
 *.json
+
+ppd_funnel.png
+ppd_line.png
+wcc_funnel.png
+wcc_line.png
