@@ -1,0 +1,114 @@
+:root {
+  --color-teal: #0d6e6a;
+  --color-teal-light: #e6f2f1;
+  --color-teal-dark: #084b48;
+  --color-red: #b3372c;
+  --color-red-light: #fbeae8;
+  --color-gold: #c99a2e;
+  --color-gold-light: #faf3e0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: sans-serif;
+    background: #f4f6f9;
+    color: #222;
+}
+
+header {
+    background: var(--color-teal-dark);
+    color: #fff;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 3px solid var(--color-gold);
+}
+header h1 { font-size: 1.4rem; font-weight: 600; }
+header .run-date { font-size: 0.85rem; opacity: 0.75; margin-top: 4px; }
+
+main { max-width: 1200px; margin: 32px auto; padding: 0 24px; }
+
+.cohort-section {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.10);
+    padding: 28px 32px;
+    margin-bottom: 32px;
+    border-left: 4px solid var(--color-teal);
+}
+.cohort-section h2 {
+    color: var(--color-teal-dark);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 18px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--color-gold);
+}
+.cohort-section h3 {
+    color: var(--color-teal);
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 16px 0 8px;
+}
+
+.two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: start;
+}
+@media (max-width: 820px) {
+    .two-col { grid-template-columns: 1fr; }
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    border: 1px solid var(--color-teal-light);
+}
+.data-table th {
+    background: var(--color-teal);
+    color: #fff;
+    padding: 7px 10px;
+    text-align: center;
+    border-bottom: 2px solid var(--color-gold);
+}
+.data-table td {
+    border: 1px solid var(--color-teal-light);
+    padding: 6px 10px;
+    text-align: center;
+}
+.data-table tr:nth-child(even) td { background: var(--color-teal-light); }
+.data-table tr:hover td { background: var(--color-gold-light); }
+
+/* negative / low-value cells, matching budget.css's cell-negative convention */
+.data-table .cell-negative { color: var(--color-red); font-weight: 600; }
+
+.chart-img, .funnel-img {
+    width: 100%;
+    max-width: 640px;
+    height: auto;
+    border-radius: 4px;
+    border: 1px solid var(--color-teal-light);
+    margin-top: 4px;
+}
+
+footer {
+    text-align: center;
+    font-size: 0.78rem;
+    color: #999;
+    padding: 24px 0 40px;
+}
+
+.load-error {
+    color: var(--color-red);
+    background: var(--color-red-light);
+    border: 1px solid var(--color-red);
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+}

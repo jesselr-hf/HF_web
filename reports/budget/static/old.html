@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link href="https://unpkg.com/tabulator-tables@6.5.2/dist/css/tabulator.min.css" rel="stylesheet">
+<script src="https://oss.sheetjs.com/sheetjs/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/tabulator-tables@6.5.2/dist/js/tabulator.min.js"></script>
+<style>
+
+:root {
+  --color-teal: #0d6e6a;
+  --color-teal-light: #e6f2f1;
+  --color-teal-dark: #084b48;
+  --color-red: #b3372c;
+  --color-red-light: #fbeae8;
+  --color-gold: #c99a2e;
+  --color-gold-light: #faf3e0;
+}
+
+body { font-family: sans-serif; margin: 20px; color: #222; }
+
+h1 {
+  color: var(--color-teal-dark);
+  border-bottom: 3px solid var(--color-gold);
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+h2 { color: var(--color-teal-dark); }
+
+.generated-at { color: #666; font-size: 0.85em; margin-bottom: 20px; }
+
+.section-heading {
+  margin-top: 30px;
+  border-left: 4px solid var(--color-teal);
+  padding-left: 10px;
+}
+
+#download-xlsx {
+  background: var(--color-teal);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.95em;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+#download-xlsx:hover { background: var(--color-teal-dark); }
+
+
+.page-header {
+  position: relative;
+  padding-right: 30px; /* reserve room so title text never runs under the logo */
+}
+
+.page-header h1,
+.page-header h2 {
+  margin: 0;
+}
+
+.logo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  max-height: auto;
+  width: auto;
+}
+
+
+/* Tabulator overrides */
+.tabulator {
+  border: 1px solid var(--color-teal-light);
+  font-size: 0.92em;
+}
+
+.tabulator .tabulator-header {
+  background-color: var(--color-teal);
+  color: black;
+  border-bottom: 2px solid var(--color-gold);
+}
+
+.tabulator .tabulator-col {
+  background-color: var(--color-teal);
+  border-right: 1px solid var(--color-teal-dark);
+}
+
+.tabulator .tabulator-row.tabulator-row-even.tabulator-selected {
+  background-color: #9abcea !important;
+}
+
+.tabulator .tabulator-row:hover {
+  background-color: var(--color-gold-light) !important;
+}
+
+.tabulator .tabulator-row .tabulator-cell.tabulator-frozen {
+  background-color: inherit;
+  border-right: 2px solid var(--color-teal);
+}
+
+.tabulator .tabulator-row .tabulator-cell.tabulator-frozen.tabulator-frozen-left {
+  box-shadow: 2px 0 3px rgba(0,0,0,0.08);
+}
+
+/* negative-value cells, set via cellFormatter class below */
+.tabulator .cell-negative { color: var(--color-red); font-weight: 600; }
+
+</style>
+</head>
+<body>
+<div class="page-header">
+  <h1>HealthFirst Family Care Center — Budget Report</h1>
+  <h2>Welcome John Doe</h2>
+  <img src="logo.png" alt="HealthFirst Family Care Center logo" class="logo">
+</div>
+<button id="download-xlsx" style="margin-bottom: 10px;">Download Excel</button>
+<div class="generated-at" id="generated-at"></div>
+<div id="sections"></div>
+
+<script>
+
+// --- formatter helpers ---------------------------------------------------
+
+
+function countTreeRows(data) {
+  var count = 0;
+  data.forEach(function(row) {
+    count += 1;
+    if (row._children && row._children.length) {
+      count += countTreeRows(row._children);
+    }
+  });
+  return count;
+}
+
+function blankIfNull(formatterFn) {
+  return function(cell, formatterParams, onRendered) {
+    var v = cell.getValue();
+    if (v === null || v === undefined) return "";
+    return formatterFn(cell, formatterParams, onRendered);
+  };
+}
+
+var moneyFormatter = blankIfNull(function(cell) {
+  var v = cell.getValue();
+  var neg = v < 0;
+  var abs = Math.abs(v).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  if (neg) {
+    cell.getElement().classList.add("cell-negative");
+  }
+  return neg ? "($" + abs + ")" : "$" + abs;
+});
+
+var numberFormatter = blankIfNull(function(cell) {
+  return cell.getValue().toLocaleString();
+});
+
+// Stored value is a decimal (e.g. .853), not a percent.
+var pctFormatter = blankIfNull(function(cell) {
+  return (cell.getValue() * 100).toFixed(1) + "%";
+});
+
+function formatterForField(field) {
+  if (field === "label") return undefined;
+  if (field.endsWith("_pct")) return pctFormatter;
+  if (field.endsWith("budget_charges") || field.endsWith("__charges") || field.endsWith("__cpv")) return moneyFormatter;
+  if (field.endsWith("proj_visits") || field.endsWith("__visits")) return numberFormatter;
+  return undefined;
+}
+
+function enrichColumns(cols) {
+  return cols.map(function(col) {
+    var enriched = Object.assign({}, col);
+    if (col.columns) {
+      enriched.columns = enrichColumns(col.columns);
+    } else {
+      var fmt = formatterForField(col.field);
+      if (fmt) enriched.formatter = fmt;
+      enriched.hozAlign = (col.field === "label") ? "left" : "right";
+      enriched.sorter = "number";
+      if (col.field === "label") enriched.frozen = true;
+    }
+    return enriched;
+  });
+}
+
+// --- excel export formatting helpers ---------------------------------------
+
+function flattenFields(cols) {
+  var fields = [];
+  cols.forEach(function(col) {
+    if (col.columns) {
+      fields = fields.concat(flattenFields(col.columns));
+    } else {
+      fields.push(col.field);
+    }
+  });
+  return fields;
+}
+
+function excelFormatForField(field) {
+  // literal "%" text (quoted) rather than the % operator, since the stored
+  // value is already e.g. 85.3, not a 0-1 fraction Excel would multiply by 100
+  if (field.endsWith("_pct")) return '0.0"%"';
+  if (field.endsWith("budget_charges") || field.endsWith("__charges") || field.endsWith("__cpv")) {
+    return "$#,##0.00;[Red]($#,##0.00)";
+  }
+  if (field.endsWith("proj_visits") || field.endsWith("__visits")) return "#,##0";
+  return null;
+}
+
+// --- build page ------------------------------------------------------------
+
+var tablesBySection = {};
+
+fetch("data/BudgetReportWebFY2027.json")
+  .then(function(r) { return r.json(); })
+  .then(function(payload) {
+    document.getElementById("generated-at").textContent =
+      "Generated: " + payload.generated_at;
+
+    var columns = enrichColumns(payload.columns);
+    var flatFields = flattenFields(payload.columns);
+    var sectionsEl = document.getElementById("sections");
+
+    Object.keys(payload.sections).forEach(function(sectionKey) {
+      var section = payload.sections[sectionKey];
+
+
+
+      
+      var heading = document.createElement("h2");
+      heading.className = "section-heading";
+      heading.textContent = sectionKey.replace(/_/g, " ")
+        .replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+      sectionsEl.appendChild(heading);
+
+      var tableDiv = document.createElement("div");
+      tableDiv.id = "table-" + sectionKey;
+      sectionsEl.appendChild(tableDiv);
+
+      var rowCount = countTreeRows(section.data);
+      var rowHeightPx = 30;   
+      var headerHeightPx = 60;   
+      var paddingPx = 20;
+      var contentHeight = headerHeightPx + (rowCount * rowHeightPx) + paddingPx;
+      var maxAllowedPx = Math.round(window.innerHeight * 0.7);
+      var tableHeight = Math.min(contentHeight, maxAllowedPx);
+
+      var table = new Tabulator(tableDiv, {
+        data: section.data,
+        dataTree: !!section.dataTree,
+        dataTreeStartExpanded: true,
+        columns: columns,
+        layout: "fitDataFill",
+        height: tableHeight, 
+        selectableRows: 1,           // <-- new: single-row selection, click again to deselect
+        selectableRowsRangeMode: "click",
+      });
+
+      tablesBySection[sectionKey] = table;
+    });
+
+    document.getElementById("download-xlsx").addEventListener("click", function() {
+      var sectionKeys = Object.keys(tablesBySection);
+      var firstKey = sectionKeys[0];
+      var firstTable = tablesBySection[firstKey];
+
+      var sheets = {};
+      sectionKeys.forEach(function(key) {
+        var sheetName = key.replace(/_/g, " ").slice(0, 31);
+        sheets[sheetName] = (key === firstKey) ? true : "#table-" + key;
+      });
+
+      firstTable.download("xlsx", "budget-report.xlsx", {
+        sheets: sheets,
+        documentProcessing: function(workbook) {
+          var headerRows = 2;
+          workbook.SheetNames.forEach(function(sheetName) {
+            var ws = workbook.Sheets[sheetName];
+            if (!ws['!ref']) return;
+            var range = XLSX.utils.decode_range(ws['!ref']);
+            for (var r = range.s.r + headerRows; r <= range.e.r; r++) {
+              flatFields.forEach(function(field, colIdx) {
+                var fmt = excelFormatForField(field);
+                if (!fmt) return;
+                var cellRef = XLSX.utils.encode_cell({ r: r, c: colIdx });
+                var cell = ws[cellRef];
+                if (cell && typeof cell.v === "number") cell.z = fmt;
+              });
+            }
+          });
+          return workbook;
+        }
+      });
+    });
+  })
+  .catch(function(err) {
+    document.getElementById("sections").innerHTML =
+      "<p>Error loading budget data: " + err + "</p>";
+  });
+
+</script>
+</body>
+</html>

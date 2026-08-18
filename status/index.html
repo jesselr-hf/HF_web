@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HFFCC Status</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: linear-gradient(160deg, #0f4c75 0%, #1b6ca8 50%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #fff;
+      padding: 2rem;
+      gap: 2.5rem;
+    }
+
+    /* ── Logo ── */
+    .logo-wrap {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 1.25rem 2rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    .logo-wrap img {
+      display: block;
+      max-width: 320px;
+      height: auto;
+    }
+
+    /* ── Palm tree card ── */
+    .card {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 16px;
+      padding: 2rem 2.5rem;
+      text-align: center;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      max-width: 520px;
+      width: 100%;
+    }
+
+    .palm {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      white-space: pre;
+      color: #ffe066;
+      text-shadow: 0 0 8px rgba(255, 224, 102, 0.45);
+      display: inline-block;
+      text-align: left;
+    }
+
+    .status {
+      margin-top: 1.5rem;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #ffe066;
+      text-shadow: 0 2px 12px rgba(255, 224, 102, 0.5);
+    }
+
+    .sun {
+      font-size: 2rem;
+      animation: spin 6s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Logo -->
+  <div class="logo-wrap">
+    <img src="https://reports.hffcc.com/status/HFFCC.png" alt="HealthFirst Family Care Center" />
+  </div>
+
+  <!-- Palm tree + status -->
+  <div class="card">
+    <div class="palm">
+       ( )  ( )  ( )
+        \ \  |  / /
+         \_\.|./_/
+          ___|___
+         /  ~~~  \
+        /  ~~~~~  \
+       |   ~~~~~   |
+        \  ~~~~~  /
+         \_______/
+             |
+             |
+             |
+            /|\
+           / | \
+          /  |  \
+         /   |   \
+        /    |    \
+       /_____|_____\</div>
+    <div class="status">
+      <span class="sun">☀️</span>
+      &nbsp;Status: It's 5:00 Somewhere!!!&nbsp;
+      <span class="sun">🌴</span>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,97 @@
+:root {
+  --color-teal: #0d6e6a;
+  --color-teal-light: #e6f2f1;
+  --color-teal-dark: #084b48;
+  --color-red: #b3372c;
+  --color-red-light: #fbeae8;
+  --color-gold: #c99a2e;
+  --color-gold-light: #faf3e0;
+}
+
+body { font-family: sans-serif; margin: 20px; color: #222; }
+
+h1 {
+  color: var(--color-teal-dark);
+  border-bottom: 3px solid var(--color-gold);
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+h2 { color: var(--color-teal-dark); }
+
+.generated-at { color: #666; font-size: 0.85em; margin-bottom: 20px; }
+
+.section-heading {
+  margin-top: 30px;
+  border-left: 4px solid var(--color-teal);
+  padding-left: 10px;
+}
+
+#download-xlsx {
+  background: var(--color-teal);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.95em;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+#download-xlsx:hover { background: var(--color-teal-dark); }
+
+
+.page-header {
+  position: relative;
+  padding-right: 30px; /* reserve room so title text never runs under the logo */
+}
+
+.page-header h1,
+.page-header h2 {
+  margin: 0;
+}
+
+.logo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  max-height: auto;
+  width: auto;
+}
+
+
+/* Tabulator overrides */
+.tabulator {
+  border: 1px solid var(--color-teal-light);
+  font-size: 0.92em;
+}
+
+.tabulator .tabulator-header {
+  background-color: var(--color-teal);
+  color: black;
+  border-bottom: 2px solid var(--color-gold);
+}
+
+.tabulator .tabulator-col {
+  background-color: var(--color-teal);
+  border-right: 1px solid var(--color-teal-dark);
+}
+
+.tabulator .tabulator-row.tabulator-row-even.tabulator-selected {
+  background-color: #9abcea !important;
+}
+
+.tabulator .tabulator-row:hover {
+  background-color: var(--color-gold-light) !important;
+}
+
+.tabulator .tabulator-row .tabulator-cell.tabulator-frozen {
+  background-color: inherit;
+  border-right: 2px solid var(--color-teal);
+}
+
+.tabulator .tabulator-row .tabulator-cell.tabulator-frozen.tabulator-frozen-left {
+  box-shadow: 2px 0 3px rgba(0,0,0,0.08);
+}
+
+/* negative-value cells, set via cellFormatter class below */
+.tabulator .cell-negative { color: var(--color-red); font-weight: 600; }

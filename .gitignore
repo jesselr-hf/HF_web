@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+hfvenv_new/
+test.*
+
+# Environment / secrets
+.env
+*.pem
+*.key
+
+# Logs
+*.log
+logs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Generated files
+*.pyc
+
+# PHI / local data
+*.csv
+*.xlsx
+*.xls
+*.json

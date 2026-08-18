@@ -1,0 +1,263 @@
+PRAGMA memory_limit='2GB';
+PRAGMA threads=1;
+
+CREATE OR REPLACE TEMP TABLE Panels AS
+SELECT *
+FROM read_csv_auto('/home/avenigalla/pophealth_flask/data/Panels.csv');
+
+CREATE OR REPLACE TEMP TABLE Panels_Clean AS
+SELECT
+    COALESCE(PCP, 'Unassigned') AS PCP,
+    REPLACE(REPLACE(TRIM(COALESCE("Age Group", 'Unknown')), ' ', ''), ',', '') AS "Age Group",
+    COALESCE(Language, 'Unknown') AS Language,
+    CAST(ROUND(COALESCE(TRY_CAST("Panel Count" AS DOUBLE), 0)) AS BIGINT) AS panel_count
+FROM Panels
+WHERE COALESCE(TRY_CAST("Panel Count" AS DOUBLE), 0) > 0;
+
+CREATE OR REPLACE TEMP TABLE TotalPop AS
+SELECT DISTINCT
+    PAT_ID,
+    COALESCE(PCP, 'Unassigned') AS PCP
+FROM read_csv_auto('/home/avenigalla/pophealth_flask/data/TotalPop.csv');
+
+CREATE OR REPLACE TEMP TABLE Obesity AS
+SELECT DISTINCT PAT_ID
+FROM read_csv_auto('/home/avenigalla/pophealth_flask/data/Obese.csv');
+
+CREATE OR REPLACE TEMP TABLE Diabetics AS
+SELECT DISTINCT PAT_ID
+FROM read_csv_auto('/home/avenigalla/pophealth_flask/data/Diabetics.csv');
+
+CREATE OR REPLACE TEMP TABLE Depression AS
+SELECT DISTINCT PAT_ID
+FROM read_csv_auto('/home/avenigalla/pophealth_flask/data/Depression.csv');
+
+CREATE OR REPLACE TEMP TABLE HTN AS
+SELECT DISTINCT PAT_ID
+FROM read_csv_auto('/home/avenigalla/pophealth_flask/data/HTN.csv');
+
+-- One demographic row per PCP for patient-list display only
+CREATE OR REPLACE VIEW PCP_Demographics AS
+SELECT
+    PCP,
+    "Age Group",
+    Language
+FROM (
+    SELECT
+        PCP,
+        "Age Group",
+        Language,
+        ROW_NUMBER() OVER (
+            PARTITION BY PCP
+            ORDER BY SUM(panel_count) DESC
+        ) AS row_num
+    FROM Panels_Clean
+    GROUP BY
+        PCP,
+        "Age Group",
+        Language
+)
+WHERE row_num = 1;
+
+
+-- Final dashboard stats
+SELECT
+    -- Main population counts
+    (
+        SELECT COUNT(DISTINCT PAT_ID) 
+        FROM Depression
+    ) AS depression_count,
+
+    (
+        SELECT COUNT(DISTINCT PAT_ID) 
+        FROM Diabetics
+    ) AS diabetics_count,
+
+    (
+        SELECT COUNT(DISTINCT PAT_ID) 
+        FROM HTN
+    ) AS htn_count,
+
+    (
+        SELECT COUNT(DISTINCT PAT_ID) 
+        FROM Obesity
+    ) AS obesity_count,
+
+    (
+        SELECT COUNT(DISTINCT PAT_ID) 
+        FROM TotalPop
+    ) AS total_count,
+
+
+    -- Age group weighted counts from Panels
+    (
+        SELECT SUM(panel_count)
+        FROM Panels_Clean
+        WHERE "Age Group" = '3-12'
+    ) AS age_3_12,
+
+    (
+        SELECT SUM(panel_count)
+        FROM Panels_Clean
+        WHERE "Age Group" = '13-17'
+    ) AS age_13_17,
+
+    (
+        SELECT SUM(panel_count)
+        FROM Panels_Clean
+        WHERE "Age Group" = '18-54'
+    ) AS age_18_54,
+
+    (
+        SELECT SUM(panel_count)
+        FROM Panels_Clean
+        WHERE "Age Group" = '55-64'
+    ) AS age_55_64,
+
+    (
+        SELECT SUM(panel_count)
+        FROM Panels_Clean
+        WHERE "Age Group" = '65+'
+    ) AS age_65_plus,
+
+
+    -- Language weighted counts from Panels
+    (
+        SELECT SUM(panel_count)
+        FROM Panels_Clean
+        WHERE Language = 'English'
+    ) AS english_count,
+
+    (
+        SELECT SUM(panel_count)
+        FROM Panels_Clean
+        WHERE Language = 'Haitian Creole'
+    ) AS haitian_creole_count,
+
+    (
+        SELECT SUM(panel_count)
+        FROM Panels_Clean
+        WHERE Language = 'Khmer'
+    ) AS khmer_count,
+
+    (
+        SELECT SUM(panel_count)
+        FROM Panels_Clean
+        WHERE Language = 'Other'
+    ) AS other_language_count,
+
+    (
+        SELECT SUM(panel_count)
+        FROM Panels_Clean
+        WHERE Language = 'Portuguese'
+    ) AS portuguese_count,
+
+    (
+        SELECT SUM(panel_count)
+        FROM Panels_Clean
+        WHERE Language = 'Spanish'
+    ) AS spanish_count,
+
+
+    -- Weighted panel rows for accurate PCP/language/age filtering
+    (
+        SELECT to_json(
+            list(
+                struct_pack(
+                    pcp := PCP,
+                    age_group := "Age Group",
+                    language := Language,
+                    panel_count := panel_count
+                )
+            )
+        )
+        FROM (
+            SELECT
+                PCP,
+                "Age Group",
+                Language,
+                panel_count
+            FROM Panels_Clean
+            ORDER BY PCP, "Age Group", Language
+        )
+    ) AS panel_rows_json,
+
+
+    -- Patient list for dashboard and condition filtering
+    (
+        SELECT to_json(
+            list(
+                struct_pack(
+                    id := PAT_ID,
+                    label := 'Patient ' || CAST(PAT_ID AS VARCHAR),
+                    pcp := COALESCE(PCP, 'Unassigned'),
+                    age_group := COALESCE("Age Group", 'Unknown'),
+                    language := COALESCE(Language, 'Unknown'),
+
+                    has_depression := CASE 
+                        WHEN depression_id IS NOT NULL THEN true 
+                        ELSE false 
+                    END,
+
+                    has_diabetes := CASE 
+                        WHEN diabetes_id IS NOT NULL THEN true 
+                        ELSE false 
+                    END,
+
+                    has_htn := CASE 
+                        WHEN htn_id IS NOT NULL THEN true 
+                        ELSE false 
+                    END,
+
+                    has_obesity := CASE 
+                        WHEN obesity_id IS NOT NULL THEN true 
+                        ELSE false 
+                    END
+                )
+            )
+        )
+        FROM (
+            SELECT DISTINCT
+                TotalPop.PAT_ID,
+                TotalPop.PCP,
+                PCP_Demographics."Age Group",
+                PCP_Demographics.Language,
+                Depression.PAT_ID AS depression_id,
+                Diabetics.PAT_ID AS diabetes_id,
+                HTN.PAT_ID AS htn_id,
+                Obesity.PAT_ID AS obesity_id
+            FROM TotalPop
+
+            LEFT JOIN PCP_Demographics
+                ON COALESCE(TotalPop.PCP, 'Unassigned') = PCP_Demographics.PCP
+
+            LEFT JOIN Depression
+                ON TotalPop.PAT_ID = Depression.PAT_ID
+
+            LEFT JOIN Diabetics
+                ON TotalPop.PAT_ID = Diabetics.PAT_ID
+
+            LEFT JOIN HTN
+                ON TotalPop.PAT_ID = HTN.PAT_ID
+
+            LEFT JOIN Obesity
+                ON TotalPop.PAT_ID = Obesity.PAT_ID
+
+            ORDER BY TotalPop.PAT_ID
+        )
+    ) AS patients_json,
+
+
+    -- PCP dropdown list
+    (
+        SELECT to_json(
+            list(
+                COALESCE(PCP, 'Unassigned')
+            )
+        ) 
+        FROM (
+            SELECT DISTINCT PCP
+            FROM TotalPop
+            ORDER BY PCP
+        )
+    ) AS pcp_list;
