@@ -113,7 +113,7 @@ AUTHORIZED_USERS = {
             "budget"
         ]
     },
-        "KhalidA@healthfirstfr.org": {
+        "khalida@healthfirstfr.org": {
                 "role": "provider",
         "reports": [ 
             "status",
