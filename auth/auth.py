@@ -89,6 +89,15 @@ AUTHORIZED_USERS = {
             "budget"
         ]
     },
+    "aniyibizi": {
+        "role": "provider",
+        "reports": [
+            "pophealth", 
+            "status",
+            "ppd", 
+            "budget"
+        ]
+    },
     "pjohnson": {
         "role": "admin",
         "reports": [
