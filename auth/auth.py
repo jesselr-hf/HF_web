@@ -44,7 +44,8 @@ AUTHORIZED_USERS = {
         "reports": [
             "pophealth", 
             "status",
-            "ppd"
+            "ppd",
+            "budget"
         ]
     },
     "atgadmin": {
@@ -84,7 +85,8 @@ AUTHORIZED_USERS = {
         "reports": [
             "pophealth", 
             "status",
-            "ppd"
+            "ppd", 
+            "budget"
         ]
     },
     "pjohnson": {
@@ -99,6 +101,21 @@ AUTHORIZED_USERS = {
     "brownd": {
         "role": "admin",
         "reports": [
+            "status",
+            "budget"
+        ]
+    },
+    "mshaughnessy": {
+                "role": "provider",
+        "reports": [ 
+            "status",
+            "ppd", 
+            "budget"
+        ]
+    },
+        "KhalidA@healthfirstfr.org": {
+                "role": "provider",
+        "reports": [ 
             "status",
             "budget"
         ]
