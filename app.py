@@ -291,5 +291,82 @@ def budget_data(filename):
     return send_from_directory(str(data_dir), filename)
 
 
+
+# ---------------------------------------------------------------------------
+# Care Gaps
+# ---------------------------------------------------------------------------
+# Add this block to app.py, in the same position/style as the other reports
+# (status / ppd / pophealth / budget). Requires "caregaps" to be added to
+# each authorized user's "reports" list in auth/auth.py's AUTHORIZED_USERS.
+#
+# File layout expected under SHARE / "reports" / "caregaps":
+#   static/caregaps.html   <- overview page (this is the entry point)
+#   static/caregaps.css
+#   static/script.js
+#   static/obesity.html    <- per-domain detail pages, added as built
+#   static/obesity.css
+#   static/obesity.js
+#   snapshots/obesity_2026_08.json   <- dated snapshots written by Obesity.py
+#                                        (sibling of static/, NOT under data/)
+#
+# The frontend (script.js/obesity.js) fetches its data via the "latest"
+# route below, which resolves the current dated filename server-side so
+# the frontend never needs to know today's exact filename.
+
+@app.route("/caregaps")
+@app.route("/caregaps/")
+@require_report_access("caregaps")
+def caregaps():
+    username, _ = get_user_permissions()
+
+    caregaps_file = SHARE / "reports" / "caregaps" / "static" / "caregaps.html"
+    if not caregaps_file.exists():
+        return "<h1>Care Gaps dashboard unavailable.</h1>", 404
+
+    html = caregaps_file.read_text(encoding="utf-8")
+    html = html.replace("<head>", '<head>\n<base href="/caregaps/">', 1)
+    html = html.replace("__USERNAME__", username)
+
+    return html
+
+
+@app.route("/caregaps/<path:filename>")
+@require_report_access("caregaps")
+def caregaps_static(filename):
+    if filename in ("", "caregaps.html"):
+        return caregaps()
+
+    return send_from_directory(
+        str(SHARE / "reports" / "caregaps" / "static"), filename
+    )
+
+
+@app.route("/caregaps/data/<domain>/latest")
+@require_report_access("caregaps")
+def caregaps_data_latest(domain):
+    """
+    Serves the most recent dated snapshot for a given domain (e.g.
+    domain="obesity" -> newest file matching snapshots/obesity_*.json)
+    without the frontend needing to know today's exact filename.
+
+    Snapshot filenames are expected in the {domain}_{YYYY}_{MM}.json format
+    written by each domain module's build() function (see Obesity.py). Since
+    that format sorts correctly as a plain string (YYYY before MM, zero
+    padded), the lexicographically-largest matching filename is also the
+    most recent one -- no need to parse dates out of the filename.
+    """
+    snapshots_dir = SHARE / "reports" / "caregaps" / "snapshots"
+
+    matches = sorted(snapshots_dir.glob(f"{domain}_*.json"))
+    if not matches:
+        return f"No snapshot found for domain '{domain}'", 404
+
+    latest = matches[-1]
+    return send_from_directory(str(snapshots_dir), latest.name)
+
+
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)
+
+

@@ -1,0 +1,606 @@
+/* ==========================================================================
+   Care Gaps Dashboard -- Overview page
+   ==========================================================================
+   This file has two parts:
+     1. Shared tokens + reusable components (cards, panels, badges, tables,
+        buttons, Tabulator theme) used by every page in the Care Gaps suite.
+     2. Overview-page-specific layout (sidebar, top bar, tab strip, card
+        grid).
+
+   Other domain pages (obesity.css, etc.) @import this file to reuse part 1
+   without duplicating it -- see the top of obesity.css for the pattern.
+
+   Palette: dark navy for structural chrome (sidebar, page headers, tab
+   strips), white content surfaces, a single green accent for primary
+   actions/active states, muted severity-scale colors for category
+   breakdowns and badges.
+   ========================================================================== */
+
+:root {
+  /* Core palette */
+  --navy: #101f3c;
+  --navy-light: #16264a;
+  --ink: #1a2233;
+  --ink-muted: #64748a;
+  --line: #e4e8ef;
+  --surface: #ffffff;
+  --surface-sunk: #f5f7fa;
+
+  /* Accent / action colors */
+  --accent: #1e7a3c;
+  --accent-soft: #e2f5e8;
+  --gold: #c68a1f;
+  --gold-dark: #b37c17;
+
+  /* Status colors (trend direction, warnings) */
+  --up-red: #c0392b;
+  --down-green: #1e7a3c;
+  --warn: #a4460f;
+  --warn-soft: #fbeee5;
+
+  /* Severity scale -- category breakdowns, badges (light to dark) */
+  --sev1: #c9d8d1;
+  --sev2: #7fa596;
+  --sev3: #2f6f5e;
+
+  /* Layout */
+  --radius: 8px;
+  --radius-sm: 6px;
+  --max-width: 1200px;
+
+  /* Type */
+  --font-body: 'IBM Plex Sans', -apple-system, Segoe UI, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--surface-sunk);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+/* ---------------- Buttons ---------------- */
+
+.btn-primary {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 8px 22px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--gold);
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn-primary:hover { background: var(--gold-dark); }
+
+.btn-secondary {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 550;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------------- Form controls ---------------- */
+
+.field-input,
+.field-select {
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* ---------------- Panel ---------------- */
+/* Generic bordered content box -- used for the trend table, operational
+   activity block, category breakdown block, detail/Tabulator block, etc. */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+
+.panel h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+/* ---------------- Metric / stat cards ---------------- */
+/* Used for both the overview's card grid and any page's summary stat row
+   (e.g. Obesity's "Total obese patients" cards). Two size variants share
+   the same base: .metric-card (grid tile, icon + sparkline) and .stat-card
+   (simpler summary tile, no icon/sparkline). */
+
+.metric-card,
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metric-card.is-placeholder { opacity: 0.55; }
+
+.stat-card--total {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.stat-card--warn {
+  background: var(--warn-soft);
+  border-color: var(--warn);
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.card-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-icon i { width: 18px; height: 18px; }
+
+.card-label,
+.stat-label {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ink);
+  line-height: 1.3;
+  white-space: pre-line;
+}
+
+.stat-label { font-weight: 400; color: var(--ink-muted); }
+
+.card-value,
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.stat-card--warn .stat-value,
+.stat-card--warn .stat-label { color: var(--warn); }
+
+.card-trend {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.card-trend i { width: 14px; height: 14px; }
+
+.card-trend.trend-up { color: var(--up-red); }
+.card-trend.trend-down { color: var(--down-green); }
+
+.card-trend-note {
+  font-size: 11px;
+  color: var(--ink-muted);
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+.card-sparkline {
+  height: 34px;
+  margin: 2px 0;
+}
+
+.card-sparkline svg { display: block; width: 100%; height: 100%; }
+
+.card-link {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--navy);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.card-link i { width: 13px; height: 13px; }
+
+.card-link:hover { text-decoration: underline; }
+
+.card-link.is-disabled {
+  color: var(--ink-muted);
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Icon color chips -- shared across any page that assigns a colored icon
+   per metric/category (overview card grid, future domain pages). */
+.chip-purple   { background: #efe6fb; color: #7c3aed; }
+.chip-green    { background: #e2f5e8; color: #1e7a3c; }
+.chip-blue     { background: #e3edfc; color: #2563eb; }
+.chip-orange   { background: #fde9d9; color: #d2691e; }
+.chip-red      { background: #fde3e3; color: #c0392b; }
+.chip-teal     { background: #dff3f2; color: #0f8b8b; }
+.chip-pink     { background: #fbe4ef; color: #c2255c; }
+.chip-violet   { background: #ece3fb; color: #6d28d9; }
+.chip-amber    { background: #fdecd2; color: #b7791f; }
+.chip-emerald  { background: #dcf5e6; color: #15803d; }
+
+/* ---------------- Badges ---------------- */
+/* Small pill labels -- category tags in Tabulator cells, status flags,
+   etc. Domain pages define their own badge-<name> color mappings but
+   share this base shape. */
+
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.badge-sev1 { background: var(--sev1); color: #1c2226; }
+.badge-sev2 { background: var(--sev2); color: #fff; }
+.badge-sev3 { background: var(--sev3); color: #fff; }
+.badge-warn { background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn); }
+
+/* ---------------- Generic data table ---------------- */
+/* Shared table look for the overview's trend summary table and any
+   domain page's own tabular summaries (not Tabulator -- plain <table>). */
+
+.data-table-wrap { overflow-x: auto; }
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.data-table th {
+  text-align: left;
+  font-weight: 650;
+  color: var(--ink-muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+.data-table .row-name { font-weight: 600; white-space: normal; }
+
+.data-table .change-positive { color: var(--up-red); font-weight: 650; }
+.data-table .change-negative { color: var(--down-green); font-weight: 650; }
+
+.data-table .sparkline-cell { width: 130px; }
+.data-table .sparkline-cell svg { display: block; width: 120px; height: 26px; }
+
+.data-table .direction-cell { text-align: center; }
+.data-table .direction-cell i { width: 15px; height: 15px; }
+.direction-up { color: var(--up-red); }
+.direction-down { color: var(--down-green); }
+
+.table-footnote {
+  margin: 12px 0 0;
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+/* ---------------- Tabulator theme override ---------------- */
+/* Keep Tabulator's own look quiet and consistent with the rest of the
+   suite. Scoped to #patientTable by convention -- domain pages should use
+   this id (or add their own scoped copy) for their Tabulator container. */
+
+#patientTable .tabulator {
+  font-family: var(--font-body);
+  font-size: 13px;
+  border: none;
+}
+
+#patientTable .tabulator-header {
+  background: var(--surface-sunk);
+  border-bottom: 1px solid var(--line);
+}
+
+#patientTable .tabulator-col {
+  background: var(--surface-sunk);
+}
+
+#patientTable .tabulator-row.tabulator-row-even {
+  background: var(--surface);
+}
+
+#patientTable .tabulator-row:hover {
+  background: var(--accent-soft) !important;
+}
+
+/* ---------------- Footer ---------------- */
+
+.page-footer {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 28px 40px;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.page-footer code {
+  font-family: var(--font-mono);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+/* ==========================================================================
+   Overview page -- layout specific to this page only
+   ========================================================================== */
+
+/* ---------------- App shell ---------------- */
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ---------------- Sidebar ---------------- */
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--navy);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 18px;
+}
+
+.company-logo {
+  display: block;
+  width: min(190px, 100%);
+  height: auto;
+  margin: 0 auto 24px;
+  object-fit: contain;
+  border-radius: var(--radius);
+  border: 5px solid #cddcf0;
+  background-color: #d9e2ec;
+}
+
+@media (max-width: 720px) {
+  .company-logo {
+    width: min(180px, 70%);
+    margin-bottom: 16px;
+  }
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  font-size: 11px;
+  color: #8a95ab;
+  line-height: 1.6;
+}
+
+.sidebar-footer p { margin: 2px 0; }
+
+/* ---------------- Main column ---------------- */
+
+.main-column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------------- Top bar ---------------- */
+
+.top-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  padding: 20px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.top-bar-title h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--navy);
+  letter-spacing: -0.01em;
+}
+
+.top-bar-title .subtitle {
+  margin: 4px 0 0;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+}
+
+.top-bar-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.control-group select {
+  min-width: 140px;
+}
+
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-left: 8px;
+}
+
+.user-badge i { width: 22px; height: 22px; color: var(--ink-muted); }
+
+/* ---------------- Tab strip ---------------- */
+
+.tab-strip {
+  background: var(--navy);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tab {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  color: #b6c0d6;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: var(--surface);
+  color: var(--navy);
+}
+
+/* ---------------- Content ---------------- */
+
+.content {
+  padding: 22px 28px 40px;
+  flex: 1;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: help;
+  color: var(--ink-muted);
+  display: inline-flex;
+}
+
+.info-btn i { width: 15px; height: 15px; }
+
+.trend-caption {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+/* ---------------- Card grid ---------------- */
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1400px) { .card-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 900px)  { .card-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .card-grid { grid-template-columns: 1fr; } }
+
+/* ---------------- Lower grid (operational + trend table) ---------------- */
+
+.lower-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 1100px) {
+  .lower-grid { grid-template-columns: 1fr; }
+}
+
+.op-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 480px) { .op-cards { grid-template-columns: 1fr; } }
+
+.op-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.op-card .card-icon { width: 30px; height: 30px; }
+
+.op-card-value {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+}

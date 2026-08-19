@@ -5,7 +5,8 @@ AUTHORIZED_USERS = {
             "pophealth",
             "status",
             "ppd",
-            "budget"
+            "budget",
+            "caregaps"
         ]
     },
     "avenigalla": {
@@ -27,7 +28,8 @@ AUTHORIZED_USERS = {
         "reports": [
             "pophealth", 
             "status",
-            "ppd"
+            "ppd",
+            "caregaps"
         ]
     },
     "medeirosl":{        

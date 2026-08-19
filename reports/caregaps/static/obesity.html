@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Obesity / BMI Care Gaps &mdash; HFFCC</title>
+<link rel="icon" type="image/png" href="/ppd/heart.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.0/css/tabulator.min.css">
+<link rel="stylesheet" href="obesity.css">
+</head>
+<body>
+
+<header class="page-header">
+  <div class="header-inner">
+    <div class="header-title">
+      <h1>Obesity / BMI Care Gaps</h1>
+      <p class="subtitle">Patients meeting adult or pediatric obesity thresholds, most recent vitals within 12 months</p>
+    </div>
+    <div class="header-meta">
+      <span id="generatedAt" class="meta-pill">&mdash;</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="view-controls">
+    <div class="provider-select-wrap">
+      <label for="providerSelect">View</label>
+      <select id="providerSelect"></select>
+    </div>
+  </section>
+
+  <!-- ============== CLINIC OVERVIEW ============== -->
+  <section id="clinicView" class="view-panel">
+
+    <div class="stat-row">
+      <div class="stat-card stat-card--total">
+        <span class="stat-value" id="statTotal">&ndash;</span>
+        <span class="stat-label">Total obese patients</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value" id="statAdultTotal">&ndash;</span>
+        <span class="stat-label">Adults (20+)</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value" id="statPedTotal">&ndash;</span>
+        <span class="stat-label">Pediatric (2&ndash;19)</span>
+      </div>
+    </div>
+
+    <div class="category-grid">
+      <div class="category-panel">
+        <h2>Adult categories</h2>
+        <div class="category-bars" id="adultBars"></div>
+      </div>
+      <div class="category-panel">
+        <h2>Pediatric categories</h2>
+        <div class="category-bars" id="pedBars"></div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============== PROVIDER VIEW (reuses same layout, scoped) ============== -->
+  <!-- providerView reuses #clinicView's DOM via JS re-render, so no duplicate markup needed -->
+
+  <section class="detail-section">
+    <div class="detail-header">
+      <h2>Patient detail</h2>
+      <div class="detail-controls">
+        <input type="text" id="quickFilter" placeholder="Filter by name or MRN&hellip;" class="field-input quick-filter">
+        <button id="downloadCsv" class="btn-secondary">Download CSV</button>
+      </div>
+    </div>
+    <div id="patientTable"></div>
+  </section>
+
+</main>
+
+<footer class="page-footer">
+  <p>Source: <code>Obesity.py</code> monthly snapshot &middot; HealthFirst Family Care Center</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.0/js/tabulator.min.js"></script>
+<script src="obesity.js"></script>
+</body>
+</html>
