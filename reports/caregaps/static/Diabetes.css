@@ -1,0 +1,232 @@
+/* ==========================================================================
+   Diabetes Care Gaps -- detail page
+   Imports the shared tokens + components (cards, panels, badges, tables,
+   buttons, Tabulator theme) defined in caregaps.css, then adds only the
+   layout rules unique to this page below.
+   ========================================================================== */
+
+@import url("caregaps.css");
+
+/* ---------------- Page header ---------------- */
+
+.page-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.header-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 20px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.header-title h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+}
+
+.meta-pill {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+
+/* ---------------- Main layout ---------------- */
+
+main {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 24px 28px 60px;
+}
+
+/* ---------------- View controls (provider select) ---------------- */
+
+.view-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.provider-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.provider-select-wrap label {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+#providerSelect {
+  min-width: 220px;
+}
+
+/* ---------------- Summary stat row ---------------- */
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* ---------------- Category breakdown ---------------- */
+
+.category-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+/* Diabetes has one flat type dimension (not two populations like Obesity's
+   Adult/Pediatric split), so its category panel spans the full row instead
+   of sharing it with a second panel. */
+.category-grid--single {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 720px) {
+  .category-grid { grid-template-columns: 1fr; }
+}
+
+.category-panel h2 {
+  margin: 0 0 14px;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.category-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cat-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 44px;
+  align-items: center;
+  gap: 10px;
+}
+
+.cat-row .cat-name {
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.cat-row .cat-track {
+  height: 10px;
+  background: var(--surface-sunk);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cat-row .cat-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.cat-row .cat-count {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  text-align: right;
+  color: var(--ink-muted);
+}
+
+.cat-row.empty .cat-name,
+.cat-row.empty .cat-count {
+  color: var(--ink-muted);
+  opacity: 0.55;
+}
+
+/* ---------------- Detail / Tabulator section ---------------- */
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.detail-header h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.detail-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.quick-filter {
+  min-width: 220px;
+}
+
+/* ---------------- Age bucket toggle ---------------- */
+
+.age-toggle {
+  display: inline-flex;
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 3px;
+}
+
+.toggle-pill {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--ink-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.toggle-pill:hover { color: var(--ink); }
+
+.toggle-pill.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* DM-type badge color mapping for Tabulator cells -- badge-sev1/2/3 base
+   styles live in caregaps.css. Type 1 (most severe/specific) darkest,
+   Prediabetes lightest, matching the severity-scale convention already
+   used for Obesity's category badges. */
+.badge-type1        { background: var(--sev3); color: #fff; }
+.badge-type2        { background: var(--sev2); color: #fff; }
+.badge-gestational  { background: var(--sev1); color: #1c2226; }
+.badge-prediabetes  { background: var(--surface-sunk); color: var(--ink-muted); border: 1px solid var(--line); }

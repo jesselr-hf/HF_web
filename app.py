@@ -118,15 +118,19 @@ def home():
 
     return f"""
     <h1>HealthFirst Family Care Center</h1>
-    <h2>Data Analytics Reporting Server</h2>
+    <h2>Data Analytics Reporting Server Directory</h2>
     <h2>Welcome {username}</h2>
 
     <p>Server Status: A - OK</p>
 
     <ul>
-        <li><a href="/status">Status</a></li>
+        <li><a href="https://healthfirstfr.sharepoint.com/sites/DataAnalysis">Create a data service request</a></li>
         <li><a href="/ppd">PPD Dashboard</a></li>
         <li><a href="/pophealth">Pophealth Dashboard</a></li>
+        <li><a href="/caregaps">Care Gap Dashboard</a></li>
+        <li><a href="/budget">Budget Dashboard</a></li>
+    
+
     </ul>
     """
 

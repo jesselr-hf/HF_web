@@ -63,8 +63,33 @@ def _read_obesity_snapshot(payload, summary=None):
     }
 
 
+def _read_diabetes_snapshot(payload, summary=None):
+    """
+    Maps a Diabetes.py summary dict (either payload['clinic_summary'] or one
+    entry from payload['provider_breakdown']) into a single overview card.
+    Unlike Obesity, Diabetes.py's SQL already guarantees exactly one row
+    per patient with a real DM type -- there is no exclusion/unclassifiable
+    count to subtract here, total_dm_patients is the full headline number.
+    """
+    if summary is None:
+        summary = payload['clinic_summary']
+
+    return {
+        'id': 'diabetes',
+        'label': 'Diabetes Patients',
+        'value': summary['total_dm_patients'],
+        'value_type': 'count',
+        'trend_direction': 'up',   # TODO: compute from prior-month/year snapshot diff once history exists
+        'trend_pct': None,
+        'trend_note': 'prior-period trend not yet available',
+        'detail_url': 'diabetes.html',
+        'placeholder': False,
+    }
+
+
 DOMAIN_READERS = {
     'obesity': _read_obesity_snapshot,
+    'diabetes': _read_diabetes_snapshot,
     # 'diabetes_foot_exam': _read_diabetes_foot_exam_snapshot,
     # 'diabetes_eye_exam': _read_diabetes_eye_exam_snapshot,
     # ... add as each domain module ships
@@ -87,9 +112,6 @@ PLACEHOLDER_CARDS = [
     {'id': 'diabetes_eye_exam', 'label': 'Diabetes Eye Exam\n(Overdue)',
      'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
      'trend_note': 'not yet available', 'detail_url': 'diabetes_eye_exam.html', 'placeholder': True},
-    {'id': 'diabetes_patients', 'label': 'Diabetes Patients',
-     'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
-     'trend_note': 'not yet available', 'detail_url': 'diabetes.html', 'placeholder': True},
     {'id': 'asthma_patients', 'label': 'Asthma Patients',
      'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
      'trend_note': 'not yet available', 'detail_url': 'asthma.html', 'placeholder': True},
@@ -215,6 +237,16 @@ def _build_cards_for(snapshot_dir, provider=None):
             'placeholder': provider is None,  # zero-but-real for a provider with no obese patients
         }
     cards.insert(3, obesity_card)
+
+    diabetes_card = _load_domain_card('diabetes', snapshot_dir, provider=provider)
+    if diabetes_card is None:
+        diabetes_card = {
+            'id': 'diabetes', 'label': 'Diabetes Patients', 'value': 0,
+            'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
+            'trend_note': 'not yet available', 'detail_url': 'diabetes.html',
+            'placeholder': provider is None,  # zero-but-real for a provider with no DM patients
+        }
+    cards.insert(4, diabetes_card)
 
     return cards
 

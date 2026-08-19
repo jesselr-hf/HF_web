@@ -16,7 +16,7 @@ const CARD_VISUALS = {
   diabetes_foot_exam:  { icon: 'footprints',       chip: 'chip-green'  },
   diabetes_eye_exam:   { icon: 'eye',              chip: 'chip-blue'   },
   obesity:             { icon: 'scale',            chip: 'chip-orange' },
-  diabetes_patients:   { icon: 'droplet',          chip: 'chip-red'    },
+  diabetes:            { icon: 'droplet',          chip: 'chip-red'    },
   asthma_patients:     { icon: 'wind',             chip: 'chip-teal'   },
   pregnancy_active:    { icon: 'heart',            chip: 'chip-pink'   },
   edinburgh_screens:   { icon: 'heart-pulse',      chip: 'chip-violet' },
