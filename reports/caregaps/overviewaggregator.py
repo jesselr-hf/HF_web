@@ -87,12 +87,48 @@ def _read_diabetes_snapshot(payload, summary=None):
     }
 
 
+def _read_diabetes_eye_exam_snapshot(payload, summary=None):
+    """
+    Maps an EyeExam.py summary dict (either payload['clinic_summary'] or one
+    entry from payload['provider_breakdown']) into a single overview card.
+
+    Per EyeExam.py's confirmed design, the summary is overdue-count-only --
+    Complete and Open Referral patients are excluded from both the clinic
+    summary and provider_breakdown (they still appear in patient_detail,
+    which this aggregator doesn't touch). So unlike Obesity there's no
+    exclusion arithmetic here: 'overdue_count' is already the full headline
+    number, same shape as Diabetes's total_dm_patients.
+    """
+    if summary is None:
+        summary = payload['clinic_summary']
+
+    return {
+        'id': 'diabetes_eye_exam',
+        'label': 'Diabetes Eye Exam\n(Overdue)',
+        'value': summary['overdue_count'],
+        'value_type': 'count',
+        'trend_direction': 'up',   # TODO: compute from prior-month/year snapshot diff once history exists
+        'trend_pct': None,
+        'trend_note': 'prior-period trend not yet available',
+        'detail_url': 'eyeexam.html',
+        'placeholder': False,
+    }
+
+
 DOMAIN_READERS = {
     'obesity': _read_obesity_snapshot,
     'diabetes': _read_diabetes_snapshot,
+    'diabetes_eye_exam': _read_diabetes_eye_exam_snapshot,
     # 'diabetes_foot_exam': _read_diabetes_foot_exam_snapshot,
-    # 'diabetes_eye_exam': _read_diabetes_eye_exam_snapshot,
     # ... add as each domain module ships
+}
+
+# EyeExam.py writes eyeexam_YYYY_MM.json (not diabetes_eye_exam_*.json) --
+# _latest_snapshot_path globs on "{domain}_*.json", so any domain whose
+# snapshot filename prefix doesn't match its DOMAIN_READERS key needs an
+# entry here mapping domain id -> actual filename prefix.
+SNAPSHOT_FILENAME_OVERRIDES = {
+    'diabetes_eye_exam': 'eyeexam',
 }
 
 
@@ -111,7 +147,7 @@ PLACEHOLDER_CARDS = [
      'trend_note': 'not yet available', 'detail_url': 'diabetes_foot_exam.html', 'placeholder': True},
     {'id': 'diabetes_eye_exam', 'label': 'Diabetes Eye Exam\n(Overdue)',
      'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
-     'trend_note': 'not yet available', 'detail_url': 'diabetes_eye_exam.html', 'placeholder': True},
+     'trend_note': 'not yet available', 'detail_url': 'eyeexam.html', 'placeholder': True},
     {'id': 'asthma_patients', 'label': 'Asthma Patients',
      'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
      'trend_note': 'not yet available', 'detail_url': 'asthma.html', 'placeholder': True},
@@ -149,8 +185,13 @@ def _latest_snapshot_path(domain, snapshot_dir):
     obesity_*.json under snapshot_dir. Relies on the same zero-padded
     YYYY_MM naming convention as Obesity.py's build(), which sorts
     correctly as a plain string.
+
+    Most domain modules name their snapshot file after their DOMAIN_READERS
+    key (e.g. 'diabetes' -> diabetes_*.json). A few don't -- see
+    SNAPSHOT_FILENAME_OVERRIDES -- so check there first.
     """
-    matches = sorted(Path(snapshot_dir).glob(f"{domain}_*.json"))
+    filename_prefix = SNAPSHOT_FILENAME_OVERRIDES.get(domain, domain)
+    matches = sorted(Path(snapshot_dir).glob(f"{filename_prefix}_*.json"))
     return matches[-1] if matches else None
 
 
@@ -173,7 +214,7 @@ def _load_domain_card(domain_id, snapshot_dir, provider=None):
     snapshot_path = _latest_snapshot_path(domain_id, snapshot_dir)
     if snapshot_path is None:
         print(f"WARNING: no snapshot found for domain '{domain_id}' "
-              f"(expected {domain_id}_*.json in {snapshot_dir}) -- falling back to placeholder")
+              f"(expected {SNAPSHOT_FILENAME_OVERRIDES.get(domain_id, domain_id)}_*.json in {snapshot_dir}) -- falling back to placeholder")
         return None
 
     with open(snapshot_path) as f:
