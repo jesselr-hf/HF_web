@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Under Age 2 Without Scheduled Visit &mdash; HFFCC</title>
+<link rel="icon" type="image/png" href="/ppd/heart.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.0/css/tabulator.min.css">
+<link rel="stylesheet" href="under2.css">
+</head>
+<body>
+
+<header class="page-header">
+  <div class="header-inner">
+    <div class="header-title">
+      <h1>Under Age 2 Without Scheduled Visit</h1>
+      <p class="subtitle">Patients under 24 months old, by whether a future well-child visit is on the schedule</p>
+    </div>
+    <div class="header-meta">
+      <span id="generatedAt" class="meta-pill">&mdash;</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="view-controls">
+    <div class="provider-select-wrap">
+      <label for="providerSelect">View</label>
+      <select id="providerSelect"></select>
+    </div>
+  </section>
+
+  <!-- ============== CLINIC OVERVIEW ============== -->
+  <section id="clinicView" class="view-panel">
+
+    <div class="stat-row">
+      <div class="stat-card stat-card--total">
+        <span class="stat-value" id="statGap">&ndash;</span>
+        <span class="stat-label">Without a scheduled visit</span>
+      </div>
+    </div>
+
+  </section>
+
+  <section class="detail-section">
+    <div class="detail-header">
+      <h2>Patient detail</h2>
+      <div class="detail-controls">
+        <div class="visit-toggle" role="group" aria-label="Scheduled visit filter">
+          <button class="toggle-pill active" data-visit="gap" type="button">No Appointment</button>
+          <button class="toggle-pill" data-visit="scheduled" type="button">Has Appointment</button>
+          <button class="toggle-pill" data-visit="all" type="button">All</button>
+        </div>
+        <input type="text" id="quickFilter" placeholder="Filter by name or MRN&hellip;" class="field-input quick-filter">
+        <button id="downloadCsv" class="btn-secondary">Download CSV</button>
+      </div>
+    </div>
+    <div id="patientTable"></div>
+  </section>
+
+</main>
+
+<footer class="page-footer">
+  <p>Source: <code>Under24Mos.py</code> monthly snapshot &middot; HealthFirst Family Care Center</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.0/js/tabulator.min.js"></script>
+<script src="under2.js"></script>
+</body>
+</html>

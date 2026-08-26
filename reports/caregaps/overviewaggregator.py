@@ -144,21 +144,53 @@ def _read_diabetes_foot_exam_snapshot(payload, summary=None):
 
 
 
+def _read_under24mos_snapshot(payload, summary=None):
+    """
+    Maps an Under24Mos.py summary dict (either payload['clinic_summary'] or
+    one entry from payload['provider_breakdown']) into a single overview
+    card.
+
+    Per Under24Mos.py's confirmed design, the summary is gap-count-only --
+    patients WITH a scheduled visit are excluded from both the clinic
+    summary and provider_breakdown (they still appear in patient_detail,
+    which this aggregator doesn't touch). So same shape as EyeExam/FootExam:
+    'total_gap_patients' is already the full headline number, no exclusion
+    arithmetic needed here.
+    """
+    if summary is None:
+        summary = payload['clinic_summary']
+
+    return {
+        'id': 'under2_no_visit',
+        'label': 'Under Age 2 Without\nScheduled Visit',
+        'value': summary['total_gap_patients'],
+        'value_type': 'count',
+        'trend_direction': 'up',   # TODO: compute from prior-month/year snapshot diff once history exists
+        'trend_pct': None,
+        'trend_note': 'prior-period trend not yet available',
+        'detail_url': 'under2.html',
+        'placeholder': False,
+    }
+
+
 DOMAIN_READERS = {
     'obesity': _read_obesity_snapshot,
     'diabetes': _read_diabetes_snapshot,
     'diabetes_eye_exam': _read_diabetes_eye_exam_snapshot,
     'diabetes_foot_exam': _read_diabetes_foot_exam_snapshot,
+    'under2_no_visit': _read_under24mos_snapshot,
     # ... add as each domain module ships
 }
 
-# EyeExam.py writes eyeexam_YYYY_MM.json (not diabetes_eye_exam_*.json) --
-# _latest_snapshot_path globs on "{domain}_*.json", so any domain whose
+# EyeExam.py writes eyeexam_YYYY_MM.json (not diabetes_eye_exam_*.json), and
+# Under24Mos.py writes under24mos_YYYY_MM.json (not under2_no_visit_*.json)
+# -- _latest_snapshot_path globs on "{domain}_*.json", so any domain whose
 # snapshot filename prefix doesn't match its DOMAIN_READERS key needs an
 # entry here mapping domain id -> actual filename prefix.
 SNAPSHOT_FILENAME_OVERRIDES = {
     'diabetes_eye_exam': 'eyeexam',
     'diabetes_foot_exam': 'footexam',
+    'under2_no_visit': 'under24mos',
 }
 
 
@@ -169,9 +201,6 @@ SNAPSHOT_FILENAME_OVERRIDES = {
 # --------------------------------------------------------------------------
 
 PLACEHOLDER_CARDS = [
-    {'id': 'under2_no_visit', 'label': 'Under Age 2 Without\nScheduled Visit',
-     'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
-     'trend_note': 'not yet available', 'detail_url': 'under2.html', 'placeholder': True},
     {'id': 'diabetes_foot_exam', 'label': 'Diabetes Foot Exam\n(Overdue)',
      'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
      'trend_note': 'not yet available', 'detail_url': 'diabetes_foot_exam.html', 'placeholder': True},
@@ -318,6 +347,16 @@ def _build_cards_for(snapshot_dir, provider=None):
             'placeholder': provider is None,  # zero-but-real for a provider with no DM patients
         }
     cards.insert(4, diabetes_card)
+
+    under24mos_card = _load_domain_card('under2_no_visit', snapshot_dir, provider=provider)
+    if under24mos_card is None:
+        under24mos_card = {
+            'id': 'under2_no_visit', 'label': 'Under Age 2 Without\nScheduled Visit', 'value': 0,
+            'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
+            'trend_note': 'not yet available', 'detail_url': 'under2.html',
+            'placeholder': provider is None,  # zero-but-real for a provider with no gap patients
+        }
+    cards.insert(0, under24mos_card)
 
     return cards
 
