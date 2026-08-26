@@ -115,11 +115,40 @@ def _read_diabetes_eye_exam_snapshot(payload, summary=None):
     }
 
 
+def _read_diabetes_foot_exam_snapshot(payload, summary=None):
+    """
+    Maps an FootExam.py summary dict (either payload['clinic_summary'] or one
+    entry from payload['provider_breakdown']) into a single overview card.
+
+    Per FootExam.py's confirmed design, the summary is overdue-count-only --
+    Complete and Open Referral patients are excluded from both the clinic
+    summary and provider_breakdown (they still appear in patient_detail,
+    which this aggregator doesn't touch). So unlike Obesity there's no
+    exclusion arithmetic here: 'overdue_count' is already the full headline
+    number, same shape as Diabetes's total_dm_patients.
+    """
+    if summary is None:
+        summary = payload['clinic_summary']
+
+    return {
+        'id': 'diabetes_foot_exam',
+        'label': 'Diabetes Foot Exam\n(Overdue)',
+        'value': summary['overdue_count'],
+        'value_type': 'count',
+        'trend_direction': 'up',   # TODO: compute from prior-month/year snapshot diff once history exists
+        'trend_pct': None,
+        'trend_note': 'prior-period trend not yet available',
+        'detail_url': 'footexam.html',
+        'placeholder': False,
+    }
+
+
+
 DOMAIN_READERS = {
     'obesity': _read_obesity_snapshot,
     'diabetes': _read_diabetes_snapshot,
     'diabetes_eye_exam': _read_diabetes_eye_exam_snapshot,
-    # 'diabetes_foot_exam': _read_diabetes_foot_exam_snapshot,
+    'diabetes_foot_exam': _read_diabetes_foot_exam_snapshot,
     # ... add as each domain module ships
 }
 
@@ -129,6 +158,7 @@ DOMAIN_READERS = {
 # entry here mapping domain id -> actual filename prefix.
 SNAPSHOT_FILENAME_OVERRIDES = {
     'diabetes_eye_exam': 'eyeexam',
+    'diabetes_foot_exam': 'footexam',
 }
 
 
