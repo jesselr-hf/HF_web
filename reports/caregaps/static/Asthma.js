@@ -52,7 +52,7 @@ function renderLoadError(err) {
   banner.className = 'stat-card stat-card--warn';
   banner.style.marginBottom = '16px';
   banner.innerHTML = `<span class="stat-label">Could not load ${DATA_URL}: ${err.message}. ` +
-    `Check that the snapshot file exists and the path in asthma.js is correct.</span>`;
+    `Check that the snapshot file exists and the path in Asthma.js is correct.</span>`;
   main.insertBefore(banner, main.firstChild);
 }
 

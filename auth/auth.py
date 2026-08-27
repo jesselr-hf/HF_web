@@ -13,8 +13,7 @@ AUTHORIZED_USERS = {
         "role": "admin",
         "reports": [
             "pophealth", 
-            "status",
-            "ppd"
+            "status"
         ]
     },
     "pvenigalla": {
@@ -38,10 +37,20 @@ AUTHORIZED_USERS = {
             "pophealth", 
             "status",
             "ppd", 
-            "budget"
+            "budget",
+            "caregaps"
         ]
     },
     "ljones": {
+        "role": "admin",
+        "reports": [
+            "pophealth", 
+            "status",
+            "ppd",
+            "budget"
+        ]
+    },
+    "aniyibizi": {
         "role": "admin",
         "reports": [
             "pophealth", 
