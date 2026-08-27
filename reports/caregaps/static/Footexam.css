@@ -92,6 +92,17 @@ main {
   margin-bottom: 20px;
 }
 
+/* Percent readout next to the overdue count on the summary stat card.
+   Sized/colored to sit secondary to .stat-value -- inherits --ink-muted
+   and --font-mono from caregaps.css tokens already in use on this page. */
+.stat-pct {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--ink-muted);
+  margin-left: 6px;
+}
+
 /* ---------------- Detail / Tabulator section ---------------- */
 
 .detail-header {
@@ -153,8 +164,8 @@ main {
   color: #fff;
 }
 
-/* Foot exam status badge color mapping for Tabulator cells -- badge-sev1/2/3
+/* Foot exam status badge color mapping for Tabulator cells -- badge-sev1/3
    base styles live in caregaps.css. Overdue is the urgent/darkest state,
    matching the severity-scale convention already used elsewhere. */
-.badge-overdue        { background: var(--sev3); color: #fff; }
-.badge-complete       { background: var(--sev1); color: #1c2226; }
+.badge-overdue  { background: var(--sev3); color: #fff; }
+.badge-complete { background: var(--sev1); color: #1c2226; }

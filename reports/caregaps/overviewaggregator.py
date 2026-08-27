@@ -87,56 +87,76 @@ def _read_diabetes_snapshot(payload, summary=None):
     }
 
 
-def _read_diabetes_eye_exam_snapshot(payload, summary=None):
+def _overdue_and_complete_counts(payload, status_field, provider=None):
     """
-    Maps an EyeExam.py summary dict (either payload['clinic_summary'] or one
-    entry from payload['provider_breakdown']) into a single overview card.
+    Shared helper for EyeExam.py/FootExam.py-shaped snapshots: counts
+    overdue and complete rows out of payload['patient_detail'], optionally
+    scoped to one provider's pcp_name. clinic_summary/provider_breakdown
+    in these snapshots only ever carry overdue_count -- there is no
+    complete count or total anywhere else -- so patient_detail is the only
+    place a percent-overdue denominator can come from. Mirrors the same
+    approach used client-side in eyeexam.js/footexam.js so the aggregator's
+    percent can never drift from the detail page's own percent.
+    """
+    rows = payload.get('patient_detail', [])
+    overdue = 0
+    complete = 0
+    for row in rows:
+        if provider is not None and row.get('pcp_name') != provider:
+            continue
+        status = row.get(status_field)
+        if status == 'OVERDUE':
+            overdue += 1
+        elif status == 'Complete':
+            complete += 1
+    return overdue, complete
 
-    Per EyeExam.py's confirmed design, the summary is overdue-count-only --
-    Complete and Open Referral patients are excluded from both the clinic
-    summary and provider_breakdown (they still appear in patient_detail,
-    which this aggregator doesn't touch). So unlike Obesity there's no
-    exclusion arithmetic here: 'overdue_count' is already the full headline
-    number, same shape as Diabetes's total_dm_patients.
+
+def _read_diabetes_eye_exam_snapshot(payload, summary=None, provider=None):
     """
-    if summary is None:
-        summary = payload['clinic_summary']
+    Maps an EyeExam.py snapshot into a single overview card showing percent
+    overdue (overdue / (overdue + complete)), matching eyeexam.js's own
+    stat card. clinic_summary/provider_breakdown only carry overdue_count,
+    so both overdue and complete counts are derived here from
+    patient_detail via _overdue_and_complete_counts -- see that docstring.
+    """
+    overdue, complete = _overdue_and_complete_counts(payload, 'eye_exam_status', provider=provider)
+    denominator = overdue + complete
+    pct = (overdue / denominator * 100) if denominator > 0 else 0.0
 
     return {
         'id': 'diabetes_eye_exam',
         'label': 'Diabetes Eye Exam\n(Overdue)',
-        'value': summary['overdue_count'],
-        'value_type': 'count',
+        'value': pct,
+        'value_type': 'percent',
         'trend_direction': 'up',   # TODO: compute from prior-month/year snapshot diff once history exists
-        'trend_pct': None,
+        'trend_pts': None,
         'trend_note': 'prior-period trend not yet available',
         'detail_url': 'eyeexam.html',
         'placeholder': False,
     }
 
 
-def _read_diabetes_foot_exam_snapshot(payload, summary=None):
+def _read_diabetes_foot_exam_snapshot(payload, summary=None, provider=None):
     """
-    Maps an FootExam.py summary dict (either payload['clinic_summary'] or one
-    entry from payload['provider_breakdown']) into a single overview card.
-
-    Per FootExam.py's confirmed design, the summary is overdue-count-only --
-    Complete and Open Referral patients are excluded from both the clinic
-    summary and provider_breakdown (they still appear in patient_detail,
-    which this aggregator doesn't touch). So unlike Obesity there's no
-    exclusion arithmetic here: 'overdue_count' is already the full headline
-    number, same shape as Diabetes's total_dm_patients.
+    Maps an FootExam.py snapshot into a single overview card showing
+    percent overdue (overdue / (overdue + complete)), matching
+    footexam.js's own stat card. clinic_summary/provider_breakdown only
+    carry overdue_count, so both overdue and complete counts are derived
+    here from patient_detail via _overdue_and_complete_counts -- see that
+    docstring.
     """
-    if summary is None:
-        summary = payload['clinic_summary']
+    overdue, complete = _overdue_and_complete_counts(payload, 'foot_exam_status', provider=provider)
+    denominator = overdue + complete
+    pct = (overdue / denominator * 100) if denominator > 0 else 0.0
 
     return {
         'id': 'diabetes_foot_exam',
         'label': 'Diabetes Foot Exam\n(Overdue)',
-        'value': summary['overdue_count'],
-        'value_type': 'count',
+        'value': pct,
+        'value_type': 'percent',
         'trend_direction': 'up',   # TODO: compute from prior-month/year snapshot diff once history exists
-        'trend_pct': None,
+        'trend_pts': None,
         'trend_note': 'prior-period trend not yet available',
         'detail_url': 'footexam.html',
         'placeholder': False,
@@ -260,11 +280,14 @@ def _load_domain_card(domain_id, snapshot_dir, provider=None):
     registered for this domain, or None if either is missing (caller
     falls back to the placeholder for that domain).
 
-    provider: if given, builds the card from that provider's entry in the
-    snapshot's provider_breakdown instead of the clinic-wide summary. If
-    the domain's snapshot has no data for that provider (they have zero
-    patients there), returns None so the caller can fall back to a
-    zeroed-out version of the card rather than crash.
+    provider: if given, builds the card scoped to that provider. For the
+    eye/foot exam readers (which now derive their percent directly from
+    patient_detail rather than provider_breakdown), the provider filter is
+    passed straight through to the reader. For every other domain reader,
+    which still keys off provider_breakdown, if the domain's snapshot has
+    no data for that provider (they have zero patients there), returns
+    None so the caller can fall back to a zeroed-out version of the card
+    rather than crash.
     """
     reader = DOMAIN_READERS.get(domain_id)
     if reader is None:
@@ -278,6 +301,15 @@ def _load_domain_card(domain_id, snapshot_dir, provider=None):
 
     with open(snapshot_path) as f:
         payload = json.load(f)
+
+    if domain_id in ('diabetes_eye_exam', 'diabetes_foot_exam'):
+        # These readers derive everything from patient_detail themselves
+        # (see _overdue_and_complete_counts) rather than provider_breakdown,
+        # so just pass the provider filter straight through. A provider
+        # with zero rows in patient_detail naturally gets 0/0 -> 0.0%
+        # rather than None, so no separate "no data for this provider"
+        # fallback is needed here.
+        return reader(payload, provider=provider)
 
     if provider is None:
         return reader(payload)

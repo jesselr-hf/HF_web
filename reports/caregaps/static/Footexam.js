@@ -1,10 +1,11 @@
 /* ==========================================================================
    Diabetic Foot Exam Care Gaps dashboard
    Fetches the monthly snapshot JSON (produced by FootExam.py) and renders:
-     - Clinic-wide / provider-scoped OVERDUE count only (per design -- the
-       summary/card never counts Complete )
+     - Clinic-wide / provider-scoped OVERDUE count and percent (overdue /
+       (overdue + complete), Open Referral excluded from both), derived
+       from patient_detail
      - Patient-level detail via Tabulator, showing ALL statuses (Complete,
-        OVERDUE), filterable by provider AND by status
+       Open Referral, OVERDUE), filterable by provider AND by status
        simultaneously
 
    Data source: change DATA_URL to wherever the Flask route serves the
@@ -15,6 +16,7 @@ const DATA_URL = '/caregaps/data/footexam/latest'; // Flask route resolves this 
 
 const STATUS_BADGE_CLASS = {
   'OVERDUE': 'badge-overdue',
+  'Open Referral': 'badge-open-referral',
   'Complete': 'badge-complete',
 };
 
@@ -125,25 +127,36 @@ function renderGeneratedAt() {
 }
 
 // --------------------------------------------------------------------------
-// Summary rendering (overdue count only)
-// Shared between clinic and provider views -- just points at a different
-// summary object depending on currentProvider.
+// Summary rendering (overdue count + percent overdue of overdue+complete)
+// Shared between clinic and provider views -- overdueAndCompleteCounts()
+// filters patient_detail by currentProvider internally.
 // --------------------------------------------------------------------------
 
-function activeSummary() {
-  if (currentProvider !== '__clinic__') {
-    return REPORT.provider_breakdown[currentProvider] || emptySummary();
-  }
-  return REPORT.clinic_summary;
-}
-
-function emptySummary() {
-  return { overdue_count: 0 };
+// Percent = overdue / (overdue + complete), scoped to the current provider
+// (or clinic-wide). Both the overdue count and the percent are derived
+// from patient_detail so they can never disagree with each other --
+// clinic_summary / provider_breakdown are not used here. Open Referral
+// patients are excluded from both numerator and denominator per the
+// requested formula.
+function overdueAndCompleteCounts() {
+  const rows = REPORT.patient_detail || [];
+  let overdue = 0;
+  let complete = 0;
+  rows.forEach(row => {
+    if (currentProvider !== '__clinic__' && row.pcp_name !== currentProvider) return;
+    if (row.foot_exam_status === 'OVERDUE') overdue++;
+    else if (row.foot_exam_status === 'Complete') complete++;
+  });
+  return { overdue, complete };
 }
 
 function renderSummary() {
-  const summary = activeSummary();
-  document.getElementById('statOverdue').textContent = summary.overdue_count ?? 0;
+  const { overdue, complete } = overdueAndCompleteCounts();
+  const denominator = overdue + complete;
+  const pct = denominator > 0 ? (overdue / denominator) * 100 : 0;
+
+  document.getElementById('statOverdue').textContent = overdue;
+  document.getElementById('statOverduePct').textContent = denominator > 0 ? `${pct.toFixed(1)}%` : '—';
 }
 
 // --------------------------------------------------------------------------
@@ -164,7 +177,7 @@ function buildTable() {
       { title: 'MRN', field: 'mrn', width: 110 },
       { title: 'DM Type', field: 'dm_type', width: 110 },
       { title: 'Status', field: 'foot_exam_status', width: 130, formatter: statusFormatter },
-      { title: 'Last exam', field: 'last_exam_date', width: 160, sorter: 'date', sorterParams: { format: 'yyyy-MM-dd' } },
+      { title: 'Last exam/referral date', field: 'last_exam_date', width: 160, sorter: 'date', sorterParams: { format: 'yyyy-MM-dd' } },
       { title: 'PCP', field: 'pcp_name', width: 160 },
     ],
   });
