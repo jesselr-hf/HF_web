@@ -12,11 +12,13 @@ reader/aggregator over snapshot files already written by each domain's own
 build() function (e.g. Obesity.py). Run this AFTER the domain modules have
 run for the current period, not instead of them.
 
-For domains that don't have a real module yet, a hardcoded placeholder
-entry is used so the card renders (dimmed, "View Details" disabled) rather
-than being omitted from the page entirely. As each domain module ships,
-move its id out of PLACEHOLDER_CARDS and into a real reader function like
-_read_obesity_snapshot() below.
+For domains that don't have a real module yet, a hardcoded fallback entry
+in CARD_FALLBACKS is used so the card renders (dimmed, "View Details"
+disabled) rather than being omitted from the page entirely. As each domain
+module ships, add a reader function like _read_obesity_snapshot() below
+and register it in DOMAIN_READERS -- CARD_ORDER/CARD_FALLBACKS don't need
+to change, since _build_cards_for() automatically prefers the real reader
+over the fallback once one is registered.
 
 Output: snapshots/overview_{YYYY}_{MM}.json, following the exact same
 naming convention as every other domain snapshot, so the existing
@@ -83,6 +85,32 @@ def _read_diabetes_snapshot(payload, summary=None):
         'trend_pct': None,
         'trend_note': 'prior-period trend not yet available',
         'detail_url': 'diabetes.html',
+        'placeholder': False,
+    }
+
+
+def _read_asthma_snapshot(payload, summary=None):
+    """
+    Maps an Asthma.py summary dict (either payload['clinic_summary'] or one
+    entry from payload['provider_breakdown']) into a single overview card.
+    Like Diabetes.py, Asthma.py's SQL already guarantees exactly one row
+    per patient -- there is no exclusion/unclassifiable count to subtract
+    here, total_asthma_patients is the full headline number. Unlike
+    Diabetes, Asthma.py has no by-type breakdown (confirmed design: total +
+    age bucket only), but the aggregator card doesn't need one either.
+    """
+    if summary is None:
+        summary = payload['clinic_summary']
+
+    return {
+        'id': 'asthma_patients',
+        'label': 'Asthma Patients',
+        'value': summary['total_asthma_patients'],
+        'value_type': 'count',
+        'trend_direction': 'up',   # TODO: compute from prior-month/year snapshot diff once history exists
+        'trend_pct': None,
+        'trend_note': 'prior-period trend not yet available',
+        'detail_url': 'asthma.html',
         'placeholder': False,
     }
 
@@ -199,50 +227,25 @@ DOMAIN_READERS = {
     'diabetes_eye_exam': _read_diabetes_eye_exam_snapshot,
     'diabetes_foot_exam': _read_diabetes_foot_exam_snapshot,
     'under2_no_visit': _read_under24mos_snapshot,
+    'asthma_patients': _read_asthma_snapshot,
     # ... add as each domain module ships
 }
 
-# EyeExam.py writes eyeexam_YYYY_MM.json (not diabetes_eye_exam_*.json), and
-# Under24Mos.py writes under24mos_YYYY_MM.json (not under2_no_visit_*.json)
-# -- _latest_snapshot_path globs on "{domain}_*.json", so any domain whose
-# snapshot filename prefix doesn't match its DOMAIN_READERS key needs an
-# entry here mapping domain id -> actual filename prefix.
+# Asthma.py writes asthma_YYYY_MM.json, but its DOMAIN_READERS key is
+# 'asthma_patients' (matching the placeholder id already in use on the
+# overview page) -- same filename/key mismatch pattern as the eye/foot
+# exam and under2 domains above, so it needs the same override treatment.
 SNAPSHOT_FILENAME_OVERRIDES = {
     'diabetes_eye_exam': 'eyeexam',
     'diabetes_foot_exam': 'footexam',
     'under2_no_visit': 'under24mos',
+    'asthma_patients': 'asthma',
 }
 
-
 # --------------------------------------------------------------------------
-# Placeholder cards for domains without a real module yet
-# Mirrors the shape script.js expects; "placeholder": True dims the card
-# and disables its "View Details" link client-side.
+# Operational activity placeholders (Fluoride, CHW visits) -- separate from
+# the domain card grid above; no real module exists for either yet.
 # --------------------------------------------------------------------------
-
-PLACEHOLDER_CARDS = [
-    {'id': 'diabetes_foot_exam', 'label': 'Diabetes Foot Exam\n(Overdue)',
-     'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
-     'trend_note': 'not yet available', 'detail_url': 'diabetes_foot_exam.html', 'placeholder': True},
-    {'id': 'diabetes_eye_exam', 'label': 'Diabetes Eye Exam\n(Overdue)',
-     'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
-     'trend_note': 'not yet available', 'detail_url': 'eyeexam.html', 'placeholder': True},
-    {'id': 'asthma_patients', 'label': 'Asthma Patients',
-     'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
-     'trend_note': 'not yet available', 'detail_url': 'asthma.html', 'placeholder': True},
-    {'id': 'pregnancy_active', 'label': 'Pregnancy (Active)',
-     'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
-     'trend_note': 'not yet available', 'detail_url': 'pregnancy.html', 'placeholder': True},
-    {'id': 'edinburgh_screens', 'label': 'Postpartum Grant\nEdinburgh Screens',
-     'value': 0.0, 'value_type': 'percent', 'trend_direction': 'up', 'trend_pts': 0,
-     'trend_note': 'not yet available', 'detail_url': 'edinburgh.html', 'placeholder': True},
-    {'id': 'bh_referrals_ppd', 'label': 'BH Referrals for PPD/Anxiety/\nMood Disorder',
-     'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
-     'trend_note': 'not yet available', 'detail_url': 'bh_referrals.html', 'placeholder': True},
-    {'id': 'bh_kept_first_appt', 'label': 'BH Referrals Kept First\nAppointment',
-     'value': 0.0, 'value_type': 'percent', 'trend_direction': 'up', 'trend_pts': 0,
-     'trend_note': 'not yet available', 'detail_url': 'bh_kept_appt.html', 'placeholder': True},
-]
 
 OPERATIONAL_PLACEHOLDER = [
     {'id': 'fluoride', 'label': 'Fluoride Applications\n(by M.A./LPN)',
@@ -338,58 +341,110 @@ def _all_providers(snapshot_dir):
     return sorted(providers)
 
 
+# --------------------------------------------------------------------------
+# Fixed display order
+# Explicit list of every card id, in the exact order they should render.
+# Grouped by related domain rather than strictly real-first/placeholder-
+# last: DM cluster (Diabetes, Foot Exam, Eye Exam) stays together, Pregnancy
+# cluster (Pregnancy, Edinburgh) stays together, BH cluster stays together.
+# This replaces the old insert()-at-fixed-index approach, which was fragile
+# -- each insert shifted every card after it, so adding/removing a card
+# silently reordered unrelated cards elsewhere in the list.
+# --------------------------------------------------------------------------
+
+CARD_ORDER = [
+    'under2_no_visit',
+    'diabetes',
+    'diabetes_foot_exam',
+    'diabetes_eye_exam',
+    'obesity',
+    'asthma_patients',
+    'pregnancy_active',
+    'edinburgh_screens',
+    'bh_referrals_ppd',
+    'bh_kept_first_appt',
+]
+
+# Fallback card shape for each id, used when no real snapshot/reader is
+# available for it (a true placeholder domain, or a real domain with no
+# snapshot found yet). `placeholder: provider is None` on real domains
+# means: clinic-wide with no snapshot yet -> shown dimmed as a placeholder;
+# scoped to a provider with zero patients in a real domain -> shown as a
+# real zero, not dimmed. True placeholder domains (no module built yet)
+# are always dimmed regardless of provider.
+CARD_FALLBACKS = {
+    'under2_no_visit': lambda provider: {
+        'id': 'under2_no_visit', 'label': 'Under Age 2 Without\nScheduled Visit', 'value': 0,
+        'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
+        'trend_note': 'not yet available', 'detail_url': 'under2.html',
+        'placeholder': provider is None,
+    },
+    'diabetes': lambda provider: {
+        'id': 'diabetes', 'label': 'Diabetes Patients', 'value': 0,
+        'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
+        'trend_note': 'not yet available', 'detail_url': 'diabetes.html',
+        'placeholder': provider is None,
+    },
+    'diabetes_foot_exam': lambda provider: {
+        'id': 'diabetes_foot_exam', 'label': 'Diabetes Foot Exam\n(Overdue)',
+        'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
+        'trend_note': 'not yet available', 'detail_url': 'diabetes_foot_exam.html', 'placeholder': True,
+    },
+    'diabetes_eye_exam': lambda provider: {
+        'id': 'diabetes_eye_exam', 'label': 'Diabetes Eye Exam\n(Overdue)',
+        'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
+        'trend_note': 'not yet available', 'detail_url': 'eyeexam.html', 'placeholder': True,
+    },
+    'obesity': lambda provider: {
+        'id': 'obesity', 'label': 'Obesity Patients', 'value': 0,
+        'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
+        'trend_note': 'not yet available', 'detail_url': 'obesity.html',
+        'placeholder': provider is None,
+    },
+    'asthma_patients': lambda provider: {
+        'id': 'asthma_patients', 'label': 'Asthma Patients', 'value': 0,
+        'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
+        'trend_note': 'not yet available', 'detail_url': 'asthma.html',
+        'placeholder': provider is None,
+    },
+    'pregnancy_active': lambda provider: {
+        'id': 'pregnancy_active', 'label': 'Pregnancy (Active)',
+        'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
+        'trend_note': 'not yet available', 'detail_url': 'pregnancy.html', 'placeholder': True,
+    },
+    'edinburgh_screens': lambda provider: {
+        'id': 'edinburgh_screens', 'label': 'Postpartum Grant\nEdinburgh Screens',
+        'value': 0.0, 'value_type': 'percent', 'trend_direction': 'up', 'trend_pts': 0,
+        'trend_note': 'not yet available', 'detail_url': 'edinburgh.html', 'placeholder': True,
+    },
+    'bh_referrals_ppd': lambda provider: {
+        'id': 'bh_referrals_ppd', 'label': 'BH Referrals for PPD/Anxiety/\nMood Disorder',
+        'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
+        'trend_note': 'not yet available', 'detail_url': 'bh_referrals.html', 'placeholder': True,
+    },
+    'bh_kept_first_appt': lambda provider: {
+        'id': 'bh_kept_first_appt', 'label': 'BH Referrals Kept First\nAppointment',
+        'value': 0.0, 'value_type': 'percent', 'trend_direction': 'up', 'trend_pts': 0,
+        'trend_note': 'not yet available', 'detail_url': 'bh_kept_appt.html', 'placeholder': True,
+    },
+}
+
+
 def _build_cards_for(snapshot_dir, provider=None):
     """
-    Builds the full card list (all 10 domain cards, in the same fixed
-    order) either clinic-wide (provider=None) or scoped to one provider.
-    For a provider view, any domain with zero patients for that provider
-    still gets a card -- just showing 0 -- rather than being omitted, so
-    the grid layout stays stable when switching providers.
+    Builds the full card list (all 10 domain cards, in CARD_ORDER) either
+    clinic-wide (provider=None) or scoped to one provider. For a provider
+    view, any domain with zero patients for that provider still gets a
+    card -- just showing 0 -- rather than being omitted, so the grid
+    layout stays stable when switching providers.
     """
     cards = []
-
-    for placeholder in PLACEHOLDER_CARDS:
-        real_card = _load_domain_card(placeholder['id'], snapshot_dir, provider=provider)
+    for card_id in CARD_ORDER:
+        real_card = _load_domain_card(card_id, snapshot_dir, provider=provider)
         if real_card is not None:
             cards.append(real_card)
-        elif provider is not None and placeholder['id'] in DOMAIN_READERS:
-            # Real domain, but this provider has zero patients in it --
-            # zero out the placeholder's value rather than show stale
-            # clinic-wide placeholder data.
-            cards.append({**placeholder, 'placeholder': False, 'value': 0})
         else:
-            cards.append(placeholder)
-
-    obesity_card = _load_domain_card('obesity', snapshot_dir, provider=provider)
-    if obesity_card is None:
-        obesity_card = {
-            'id': 'obesity', 'label': 'Obesity Patients', 'value': 0,
-            'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
-            'trend_note': 'not yet available', 'detail_url': 'obesity.html',
-            'placeholder': provider is None,  # zero-but-real for a provider with no obese patients
-        }
-    cards.insert(3, obesity_card)
-
-    diabetes_card = _load_domain_card('diabetes', snapshot_dir, provider=provider)
-    if diabetes_card is None:
-        diabetes_card = {
-            'id': 'diabetes', 'label': 'Diabetes Patients', 'value': 0,
-            'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
-            'trend_note': 'not yet available', 'detail_url': 'diabetes.html',
-            'placeholder': provider is None,  # zero-but-real for a provider with no DM patients
-        }
-    cards.insert(4, diabetes_card)
-
-    under24mos_card = _load_domain_card('under2_no_visit', snapshot_dir, provider=provider)
-    if under24mos_card is None:
-        under24mos_card = {
-            'id': 'under2_no_visit', 'label': 'Under Age 2 Without\nScheduled Visit', 'value': 0,
-            'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
-            'trend_note': 'not yet available', 'detail_url': 'under2.html',
-            'placeholder': provider is None,  # zero-but-real for a provider with no gap patients
-        }
-    cards.insert(0, under24mos_card)
-
+            cards.append(CARD_FALLBACKS[card_id](provider))
     return cards
 
 
