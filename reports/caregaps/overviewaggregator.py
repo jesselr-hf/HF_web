@@ -243,10 +243,32 @@ SNAPSHOT_FILENAME_OVERRIDES = {
 }
 
 # --------------------------------------------------------------------------
-# Operational activity placeholders (Fluoride, CHW visits) -- separate from
-# the domain card grid above; no real module exists for either yet.
+# Operational activity
+# Separate from the domain card grid above: OperationalActivity.py writes
+# ONE snapshot (operational_activity_YYYY_MM.json) containing BOTH metrics
+# nested under payload['metrics'], rather than one snapshot file per
+# metric -- see OperationalActivity.py's module docstring. So this section
+# reads that single file once and maps both of its metric entries into
+# op-cards, instead of looking each id up via DOMAIN_READERS/
+# _latest_snapshot_path like the domain cards above.
+#
+# Card shape matches OPERATIONAL_PLACEHOLDER exactly (trend_direction/
+# trend_pct/trend_note included, even though no history exists yet to
+# compute a real trend from) so script.js's renderOperationalCards() needs
+# no changes.
 # --------------------------------------------------------------------------
 
+OPERATIONAL_ACTIVITY_FILENAME_PREFIX = 'operational_activity'
+
+# id -> (metrics key in OperationalActivity.py's payload, detail page)
+OPERATIONAL_METRICS = {
+    'fluoride': {'metrics_key': 'fluoride', 'detail_url': 'fluoride.html'},
+    'chw_visits': {'metrics_key': 'chw', 'detail_url': 'chw_visits.html'},
+}
+
+# Used only if no operational_activity_*.json snapshot exists yet (module
+# hasn't run for this period) -- same shape/values as before, so the cards
+# still render (as zeros) rather than being omitted.
 OPERATIONAL_PLACEHOLDER = [
     {'id': 'fluoride', 'label': 'Fluoride Applications\n(by M.A./LPN)',
      'value': 0, 'trend_direction': 'up', 'trend_pct': 0,
@@ -255,6 +277,49 @@ OPERATIONAL_PLACEHOLDER = [
      'value': 0, 'trend_direction': 'up', 'trend_pct': 0,
      'trend_note': 'not yet available', 'detail_url': 'chw_visits.html'},
 ]
+
+
+def _read_operational_activity(snapshot_dir):
+    """
+    Reads the latest operational_activity_*.json (written by
+    OperationalActivity.py's build()) and maps its metrics dict into the
+    op-card list script.js expects. Falls back to OPERATIONAL_PLACEHOLDER
+    if no snapshot exists yet for this period, same as the domain cards'
+    CARD_FALLBACKS behavior.
+    """
+    matches = sorted(Path(snapshot_dir).glob(f"{OPERATIONAL_ACTIVITY_FILENAME_PREFIX}_*.json"))
+    if not matches:
+        print(f"WARNING: no snapshot found for operational activity "
+              f"(expected {OPERATIONAL_ACTIVITY_FILENAME_PREFIX}_*.json in {snapshot_dir}) -- falling back to placeholder")
+        return OPERATIONAL_PLACEHOLDER
+
+    with open(matches[-1]) as f:
+        payload = json.load(f)
+
+    metrics = payload.get('metrics', {})
+    cards = []
+    for card_id, cfg in OPERATIONAL_METRICS.items():
+        metric = metrics.get(cfg['metrics_key'])
+        if metric is None:
+            # Metric key missing from this snapshot (e.g. a new metric
+            # added to OverviewAggregator.py before OperationalActivity.py
+            # has shipped a build for it) -- fall back to that one card's
+            # placeholder entry rather than dropping it from the grid.
+            fallback = next(p for p in OPERATIONAL_PLACEHOLDER if p['id'] == card_id)
+            cards.append(fallback)
+            continue
+
+        cards.append({
+            'id': card_id,
+            'label': metric.get('label', card_id),
+            'value': metric.get('total_count', 0),
+            'trend_direction': 'up',   # TODO: compute from prior-month snapshot diff once history exists
+            'trend_pct': 0,
+            'trend_note': 'not yet available',
+            'detail_url': cfg['detail_url'],
+        })
+
+    return cards
 
 
 # --------------------------------------------------------------------------
@@ -464,10 +529,12 @@ def build(snapshot_dir='snapshots'):
     an extra network round trip. `providers` is the sorted list used to
     populate that dropdown.
 
-    NOTE: `operational_activity` (Fluoride, CHW visits) is currently
-    clinic-wide only in every case -- those two modules don't exist yet
-    and have no per-provider breakdown to read. When they're built, this
-    function will need a provider-scoped version of that section too.
+    NOTE: `operational_activity` (Fluoride, CHW visits) is read from
+    OperationalActivity.py's own snapshot via _read_operational_activity()
+    and is clinic-wide only in every case -- that module has no
+    per-provider breakdown to read (it groups by employee, not PCP). If a
+    provider-scoped view is wanted later, this function will need a
+    provider-scoped version of that section too.
     """
     cards = _build_cards_for(snapshot_dir, provider=None)
 
@@ -483,7 +550,7 @@ def build(snapshot_dir='snapshots'):
         'cards': cards,
         'providers': providers,
         'provider_cards': provider_cards,
-        'operational_activity': OPERATIONAL_PLACEHOLDER,
+        'operational_activity': _read_operational_activity(snapshot_dir),
     }
 
     snapshot_dir_path = Path(snapshot_dir)

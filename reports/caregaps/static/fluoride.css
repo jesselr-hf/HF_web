@@ -1,0 +1,102 @@
+/* ==========================================================================
+   Fluoride Applications -- detail page
+   Imports the shared tokens + components (cards, panels, badges, tables,
+   buttons, Tabulator theme) defined in caregaps.css, then adds only the
+   layout rules unique to this page below. Structurally mirrors Asthma.css,
+   minus the provider-select/age-toggle rules -- this page has no
+   employee-scoping dropdown (confirmed design: column-filterable
+   Tabulator tables only), so those rules are intentionally omitted.
+   ========================================================================== */
+
+@import url("caregaps.css");
+
+/* ---------------- Page header ---------------- */
+
+.page-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.header-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 20px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.header-title h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+}
+
+.meta-pill {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+
+/* ---------------- Main layout ---------------- */
+
+main {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 24px 28px 60px;
+}
+
+/* ---------------- Summary stat row ---------------- */
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+/* ---------------- Detail / Tabulator sections ---------------- */
+
+.detail-section + .detail-section {
+  margin-top: 32px;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.detail-header h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.detail-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.quick-filter {
+  min-width: 220px;
+}

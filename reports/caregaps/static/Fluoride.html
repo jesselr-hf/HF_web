@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fluoride Applications &mdash; HFFCC</title>
+<link rel="icon" type="image/png" href="/ppd/heart.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.0/css/tabulator.min.css">
+<link rel="stylesheet" href="fluoride.css">
+</head>
+<body>
+
+<header class="page-header">
+  <div class="header-inner">
+    <div class="header-title">
+      <h1>Fluoride Applications</h1>
+      <p class="subtitle">Fluoride applications (by M.A./LPN), current month to date</p>
+    </div>
+    <div class="header-meta">
+      <span id="generatedAt" class="meta-pill">&mdash;</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="stat-row">
+    <div class="stat-card stat-card--total">
+      <span class="stat-value" id="statTotal">&ndash;</span>
+      <span class="stat-label">Total applications this month</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value" id="statEmployees">&ndash;</span>
+      <span class="stat-label">M.A./LPN staff with applications</span>
+    </div>
+  </section>
+
+  <section class="detail-section">
+    <div class="detail-header">
+      <h2>Employee breakdown</h2>
+      <div class="detail-controls">
+        <input type="text" id="quickFilter" placeholder="Filter by employee&hellip;" class="field-input quick-filter">
+        <button id="downloadCsv" class="btn-secondary">Download CSV</button>
+      </div>
+    </div>
+    <div id="employeeTable"></div>
+  </section>
+
+  <section class="detail-section">
+    <div class="detail-header">
+      <h2>Daily detail</h2>
+      <div class="detail-controls">
+        <input type="text" id="quickFilterDetail" placeholder="Filter by employee&hellip;" class="field-input quick-filter">
+      </div>
+    </div>
+    <div id="detailTable"></div>
+  </section>
+
+</main>
+
+<footer class="page-footer">
+  <p>Source: <code>OperationalActivity.py</code> monthly snapshot &middot; HealthFirst Family Care Center</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.0/js/tabulator.min.js"></script>
+<script src="fluoride.js"></script>
+</body>
+</html>
