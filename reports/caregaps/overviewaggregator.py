@@ -115,6 +115,32 @@ def _read_asthma_snapshot(payload, summary=None):
     }
 
 
+def _read_pregnancy_snapshot(payload, summary=None):
+    """
+    Maps a Pregnancy.py summary dict (either payload['clinic_summary'] or
+    one entry from payload['provider_breakdown']) into a single overview
+    card. Like Diabetes.py/Asthma.py, Pregnancy.py's "Is Pregnant" logic
+    already resolves to exactly the active/qualifying patient set before
+    clinic_summary/provider_breakdown are built -- there is no
+    exclusion/unclassifiable count to subtract here, total_pregnant_patients
+    is the full headline number.
+    """
+    if summary is None:
+        summary = payload['clinic_summary']
+
+    return {
+        'id': 'pregnancy_active',
+        'label': 'Pregnancy (Active)',
+        'value': summary['total_pregnant_patients'],
+        'value_type': 'count',
+        'trend_direction': 'up',   # TODO: compute from prior-month/year snapshot diff once history exists
+        'trend_pct': None,
+        'trend_note': 'prior-period trend not yet available',
+        'detail_url': 'pregnancy.html',
+        'placeholder': False,
+    }
+
+
 def _overdue_and_complete_counts(payload, status_field, provider=None):
     """
     Shared helper for EyeExam.py/FootExam.py-shaped snapshots: counts
@@ -228,6 +254,7 @@ DOMAIN_READERS = {
     'diabetes_foot_exam': _read_diabetes_foot_exam_snapshot,
     'under2_no_visit': _read_under24mos_snapshot,
     'asthma_patients': _read_asthma_snapshot,
+    'pregnancy_active': _read_pregnancy_snapshot,
     # ... add as each domain module ships
 }
 
@@ -235,11 +262,14 @@ DOMAIN_READERS = {
 # 'asthma_patients' (matching the placeholder id already in use on the
 # overview page) -- same filename/key mismatch pattern as the eye/foot
 # exam and under2 domains above, so it needs the same override treatment.
+# Pregnancy.py writes pregnancy_YYYY_MM.json, but its DOMAIN_READERS key
+# is 'pregnancy_active' -- same mismatch, same override treatment.
 SNAPSHOT_FILENAME_OVERRIDES = {
     'diabetes_eye_exam': 'eyeexam',
     'diabetes_foot_exam': 'footexam',
     'under2_no_visit': 'under24mos',
     'asthma_patients': 'asthma',
+    'pregnancy_active': 'pregnancy',
 }
 
 # --------------------------------------------------------------------------
@@ -475,7 +505,8 @@ CARD_FALLBACKS = {
     'pregnancy_active': lambda provider: {
         'id': 'pregnancy_active', 'label': 'Pregnancy (Active)',
         'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
-        'trend_note': 'not yet available', 'detail_url': 'pregnancy.html', 'placeholder': True,
+        'trend_note': 'not yet available', 'detail_url': 'pregnancy.html',
+        'placeholder': provider is None,
     },
     'edinburgh_screens': lambda provider: {
         'id': 'edinburgh_screens', 'label': 'Postpartum Grant\nEdinburgh Screens',
