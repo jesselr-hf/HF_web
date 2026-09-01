@@ -142,6 +142,30 @@ def _read_pregnancy_snapshot(payload, summary=None):
     }
 
 
+def _read_edinburgh_screens_snapshot(payload, summary=None):
+    """
+    Maps an EdinburghScreens.py summary dict (payload['clinic_summary'] --
+    no provider_breakdown, not needed for the grant) into a single overview
+    card. Value is a YTD count of completed Edinburgh (PPD) screenings,
+    sourced from the existing ppd.py/ppd_shared.py pipeline's ppd_data.json
+    rather than a fresh SQL query -- see EdinburghScreens.py's docstring.
+    """
+    if summary is None:
+        summary = payload['clinic_summary']
+
+    return {
+        'id': 'edinburgh_screens',
+        'label': 'Postpartum Grant\nEdinburgh Screens',
+        'value': summary['total_edinburgh_screens_ytd'],
+        'value_type': 'count',
+        'trend_direction': 'up',   # TODO: overwritten by _load_domain_card via _trend_from_series
+        'trend_pct': None,
+        'trend_note': 'prior-period trend not yet available',
+        'detail_url': 'edinburgh.html',
+        'placeholder': False,
+    }
+
+
 def _overdue_and_complete_counts(payload, status_field, provider=None):
     """
     Shared helper for EyeExam.py/FootExam.py-shaped snapshots: counts
@@ -256,6 +280,7 @@ DOMAIN_READERS = {
     'under2_no_visit': _read_under24mos_snapshot,
     'asthma_patients': _read_asthma_snapshot,
     'pregnancy_active': _read_pregnancy_snapshot,
+    'edinburgh_screens': _read_edinburgh_screens_snapshot,
     # ... add as each domain module ships
 }
 
@@ -265,6 +290,8 @@ DOMAIN_READERS = {
 # exam and under2 domains above, so it needs the same override treatment.
 # Pregnancy.py writes pregnancy_YYYY_MM.json, but its DOMAIN_READERS key
 # is 'pregnancy_active' -- same mismatch, same override treatment.
+# EdinburghScreens.py writes edinburgh_screens_YYYY_MM.json, which already
+# matches its DOMAIN_READERS key exactly, so it needs no override entry.
 SNAPSHOT_FILENAME_OVERRIDES = {
     'diabetes_eye_exam': 'eyeexam',
     'diabetes_foot_exam': 'footexam',
@@ -436,6 +463,10 @@ def _extract_pregnancy_value(payload, summary):
     return summary['total_pregnant_patients']
 
 
+def _extract_edinburgh_screens_value(payload, summary):
+    return summary['total_edinburgh_screens_ytd']
+
+
 def _extract_under2_value(payload, summary):
     return summary['total_gap_patients']
 
@@ -461,6 +492,7 @@ VALUE_EXTRACTORS = {
     'diabetes': (_extract_diabetes_value, True),
     'asthma_patients': (_extract_asthma_value, True),
     'pregnancy_active': (_extract_pregnancy_value, True),
+    'edinburgh_screens': (_extract_edinburgh_screens_value, True),
     'under2_no_visit': (_extract_under2_value, True),
     'diabetes_eye_exam': (_extract_eye_exam_value, False),
     'diabetes_foot_exam': (_extract_foot_exam_value, False),
@@ -701,7 +733,7 @@ CARD_FALLBACKS = {
     },
     'edinburgh_screens': lambda provider: {
         'id': 'edinburgh_screens', 'label': 'Postpartum Grant\nEdinburgh Screens',
-        'value': 0.0, 'value_type': 'percent', 'trend_direction': 'up', 'trend_pts': 0,
+        'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
         'trend_note': 'not yet available', 'detail_url': 'edinburgh.html', 'placeholder': True,
     },
     'bh_referrals_ppd': lambda provider: {
