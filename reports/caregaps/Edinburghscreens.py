@@ -42,6 +42,17 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+HERE = Path(__file__).parent.resolve()
+
+# Default resolves relative to THIS file's location, not the caller's CWD --
+# matches the pattern CareGapRunner.py already uses for the aggregator
+# (Path(aggregator.__file__).parent / "snapshots"). Calling main()/build()
+# with no snapshot_dir argument, as CareGapRunner.py currently does for PPD,
+# previously resolved the literal string "snapshots" against the process's
+# working directory, which is NOT this file's directory when run from
+# CareGapRunner.py -- that caused a FileNotFoundError on ppd_data.json.
+DEFAULT_SNAPSHOT_DIR = HERE / "snapshots"
+
 # Filename ppd.py writes inside snapshots/. Confirm this matches -- if
 # ppd.py names it differently, update here.
 PPD_DATA_FILENAME = "ppd_data.json"
@@ -67,9 +78,12 @@ def _ytd_screening_count(rows: list[dict], as_of: datetime) -> int:
     )
 
 
-def build(snapshot_dir: str = "snapshots", as_of: datetime | None = None) -> dict:
+def build(snapshot_dir: str | Path | None = None, as_of: datetime | None = None) -> dict:
     """Read ppd_data.json out of snapshot_dir and compute the clinic_summary
     for the Edinburgh Screens card.
+
+    snapshot_dir defaults to DEFAULT_SNAPSHOT_DIR (resolved relative to this
+    file, not the caller's CWD) when not given.
 
     Combines YTD screening counts from BOTH the "ppd" and "wcc" arrays --
     two entirely different ways of capturing Edinburgh screening data, per
@@ -81,7 +95,8 @@ def build(snapshot_dir: str = "snapshots", as_of: datetime | None = None) -> dic
     isn't split by provider.
     """
     as_of = as_of or datetime.now()
-    ppd_data_path = Path(snapshot_dir) / PPD_DATA_FILENAME
+    snapshot_dir = Path(snapshot_dir) if snapshot_dir is not None else DEFAULT_SNAPSHOT_DIR
+    ppd_data_path = snapshot_dir / PPD_DATA_FILENAME
 
     with open(ppd_data_path, "r") as f:
         data = json.load(f)
@@ -93,7 +108,7 @@ def build(snapshot_dir: str = "snapshots", as_of: datetime | None = None) -> dic
     return {"total_edinburgh_screens_ytd": combined_ytd}
 
 
-def _write_snapshot(clinic_summary: dict, snapshot_dir: str, as_of: datetime) -> Path:
+def _write_snapshot(clinic_summary: dict, snapshot_dir: str | Path, as_of: datetime) -> Path:
     """Writes edinburgh_screens_YYYY_MM.json directly into snapshot_dir,
     same directory ppd_data.json was read from and OverviewAggregator.py
     reads every other domain's snapshot from. No distribute() -- this
@@ -114,10 +129,11 @@ def _write_snapshot(clinic_summary: dict, snapshot_dir: str, as_of: datetime) ->
     return out_path
 
 
-def main(snapshot_dir: str = "snapshots"):
+def main(snapshot_dir: str | Path | None = None):
     as_of = datetime.now()
-    clinic_summary = build(snapshot_dir=snapshot_dir, as_of=as_of)
-    out_path = _write_snapshot(clinic_summary, snapshot_dir, as_of)
+    resolved_dir = Path(snapshot_dir) if snapshot_dir is not None else DEFAULT_SNAPSHOT_DIR
+    clinic_summary = build(snapshot_dir=resolved_dir, as_of=as_of)
+    out_path = _write_snapshot(clinic_summary, resolved_dir, as_of)
     print(f"Edinburgh Screens snapshot written: {out_path}")
 
 
