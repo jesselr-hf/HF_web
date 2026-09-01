@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Postpartum Grant &mdash; Edinburgh Screens &mdash; HFFCC</title>
+<link rel="icon" type="image/png" href="/ppd/heart.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.0/css/tabulator.min.css">
+<link rel="stylesheet" href="ppd.css">
+</head>
+<body>
+
+<header class="page-header">
+  <div class="header-inner">
+    <div class="header-title">
+      <h1>Postpartum Grant &mdash; Edinburgh Screens</h1>
+      <p class="subtitle">Edinburgh Postnatal Depression Scale screenings, PPD and WCC visit types, by quarter</p>
+    </div>
+    <div class="header-meta">
+      <span id="generatedAt" class="meta-pill">&mdash;</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="stat-row">
+    <div class="stat-card stat-card--total">
+      <span class="stat-value" id="statTotal">&ndash;</span>
+      <span class="stat-label">Total screenings, year to date (PPD + WCC)</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value" id="statPpdTotal">&ndash;</span>
+      <span class="stat-label">PPD screenings, year to date</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value" id="statWccTotal">&ndash;</span>
+      <span class="stat-label">WCC screenings, year to date</span>
+    </div>
+  </section>
+
+  <section class="detail-section">
+    <div class="detail-header">
+      <h2>Screenings by quarter</h2>
+      <div class="detail-controls">
+        <input type="text" id="quickFilter" placeholder="Filter by quarter&hellip;" class="field-input quick-filter">
+        <button id="downloadCsv" class="btn-secondary">Download CSV</button>
+      </div>
+    </div>
+    <div id="quarterTable"></div>
+  </section>
+
+</main>
+
+<footer class="page-footer">
+  <p>Source: <code>ppd_data.json</code> (ppd.py / ppd_shared.py pipeline) &middot; HealthFirst Family Care Center</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.0/js/tabulator.min.js"></script>
+<script src="ppd.js"></script>
+</body>
+</html>

@@ -161,7 +161,7 @@ def _read_edinburgh_screens_snapshot(payload, summary=None):
         'trend_direction': 'up',   # TODO: overwritten by _load_domain_card via _trend_from_series
         'trend_pct': None,
         'trend_note': 'prior-period trend not yet available',
-        'detail_url': 'edinburgh.html',
+        'detail_url': 'ppd.html',
         'placeholder': False,
     }
 
@@ -734,7 +734,7 @@ CARD_FALLBACKS = {
     'edinburgh_screens': lambda provider: {
         'id': 'edinburgh_screens', 'label': 'Postpartum Grant\nEdinburgh Screens',
         'value': 0, 'value_type': 'count', 'trend_direction': 'up', 'trend_pct': 0,
-        'trend_note': 'not yet available', 'detail_url': 'edinburgh.html', 'placeholder': True,
+        'trend_note': 'not yet available', 'detail_url': 'ppd.html', 'placeholder': True,
     },
     'bh_referrals_ppd': lambda provider: {
         'id': 'bh_referrals_ppd', 'label': 'BH Referrals for PPD/Anxiety/\nMood Disorder',
