@@ -28,6 +28,7 @@ naming convention as every other domain snapshot, so the existing
 import json
 from datetime import datetime
 from pathlib import Path
+from statistics import mean
 
 
 # --------------------------------------------------------------------------
@@ -309,13 +310,35 @@ OPERATIONAL_PLACEHOLDER = [
 ]
 
 
+def _operational_activity_history(metrics_key, snapshot_dir):
+    """
+    Same idea as _domain_value_history, but for operational activity: both
+    metrics (fluoride, chw) live nested inside the SAME snapshot file per
+    period, so this reads every operational_activity_*.json on disk once
+    and pulls out just one metric's total_count per period. A period
+    missing this metric key entirely is skipped (not treated as 0).
+    """
+    matches = sorted(Path(snapshot_dir).glob(f"{OPERATIONAL_ACTIVITY_FILENAME_PREFIX}_*.json"))
+    series = []
+    for path in matches:
+        with open(path) as f:
+            payload = json.load(f)
+        metric = payload.get('metrics', {}).get(metrics_key)
+        if metric is None:
+            continue
+        series.append(metric.get('total_count', 0))
+    return series
+
+
 def _read_operational_activity(snapshot_dir):
     """
     Reads the latest operational_activity_*.json (written by
     OperationalActivity.py's build()) and maps its metrics dict into the
     op-card list script.js expects. Falls back to OPERATIONAL_PLACEHOLDER
     if no snapshot exists yet for this period, same as the domain cards'
-    CARD_FALLBACKS behavior.
+    CARD_FALLBACKS behavior. Trend fields are computed from every
+    operational_activity_*.json snapshot on disk, same approach as the
+    domain cards (see _domain_value_history/_trend_from_series).
     """
     matches = sorted(Path(snapshot_dir).glob(f"{OPERATIONAL_ACTIVITY_FILENAME_PREFIX}_*.json"))
     if not matches:
@@ -339,13 +362,17 @@ def _read_operational_activity(snapshot_dir):
             cards.append(fallback)
             continue
 
+        series = _operational_activity_history(cfg['metrics_key'], snapshot_dir)
+        trend = _trend_from_series(series, 'count')
+
         cards.append({
             'id': card_id,
             'label': metric.get('label', card_id),
             'value': metric.get('total_count', 0),
-            'trend_direction': 'up',   # TODO: compute from prior-month snapshot diff once history exists
-            'trend_pct': 0,
-            'trend_note': 'not yet available',
+            'trend_direction': trend['trend_direction'],
+            'trend_pct': trend['trend_pct'] if trend['trend_pct'] is not None else 0,
+            'trend_note': trend['trend_note'],
+            'trend_series': trend['trend_series'],
             'detail_url': cfg['detail_url'],
         })
 
@@ -370,6 +397,163 @@ def _latest_snapshot_path(domain, snapshot_dir):
     filename_prefix = SNAPSHOT_FILENAME_OVERRIDES.get(domain, domain)
     matches = sorted(Path(snapshot_dir).glob(f"{filename_prefix}_*.json"))
     return matches[-1] if matches else None
+
+
+def _all_snapshot_paths(domain, snapshot_dir):
+    """
+    Every dated snapshot for a domain, oldest -> newest. Same glob/sort
+    convention as _latest_snapshot_path, just returning the whole list
+    instead of just the last one -- used to build trend history now that
+    more than one month of snapshots exists on disk.
+    """
+    filename_prefix = SNAPSHOT_FILENAME_OVERRIDES.get(domain, domain)
+    return sorted(Path(snapshot_dir).glob(f"{filename_prefix}_*.json"))
+
+
+# --------------------------------------------------------------------------
+# Trend history
+# Each domain reader above already knows how to pull its one headline
+# number out of a payload (clinic_summary lookup, or the eye/foot exam
+# overdue-percent calc). Rather than duplicate that per domain, this map
+# gives a small value-only extractor per domain id, so trend history can
+# be computed generically against every snapshot on disk, not just the
+# latest one.
+# --------------------------------------------------------------------------
+
+def _extract_obesity_value(payload, summary):
+    return summary['total_obese_patients'] - summary.get('unclassifiable_sex_count', 0)
+
+
+def _extract_diabetes_value(payload, summary):
+    return summary['total_dm_patients']
+
+
+def _extract_asthma_value(payload, summary):
+    return summary['total_asthma_patients']
+
+
+def _extract_pregnancy_value(payload, summary):
+    return summary['total_pregnant_patients']
+
+
+def _extract_under2_value(payload, summary):
+    return summary['total_gap_patients']
+
+
+def _extract_eye_exam_value(payload, summary, provider=None):
+    overdue, complete = _overdue_and_complete_counts(payload, 'eye_exam_status', provider=provider)
+    denom = overdue + complete
+    return (overdue / denom * 100) if denom > 0 else 0.0
+
+
+def _extract_foot_exam_value(payload, summary, provider=None):
+    overdue, complete = _overdue_and_complete_counts(payload, 'foot_exam_status', provider=provider)
+    denom = overdue + complete
+    return (overdue / denom * 100) if denom > 0 else 0.0
+
+
+# domain id -> (extractor fn, uses provider_breakdown?)
+# The two exam domains read patient_detail directly (see
+# _overdue_and_complete_counts) so they take `provider` themselves rather
+# than a provider_breakdown summary dict, same split as _load_domain_card.
+VALUE_EXTRACTORS = {
+    'obesity': (_extract_obesity_value, True),
+    'diabetes': (_extract_diabetes_value, True),
+    'asthma_patients': (_extract_asthma_value, True),
+    'pregnancy_active': (_extract_pregnancy_value, True),
+    'under2_no_visit': (_extract_under2_value, True),
+    'diabetes_eye_exam': (_extract_eye_exam_value, False),
+    'diabetes_foot_exam': (_extract_foot_exam_value, False),
+}
+
+
+def _domain_value_history(domain_id, snapshot_dir, provider=None):
+    """
+    Returns (series, snapshot_count) where series is the list of this
+    domain's headline value across every snapshot found on disk, oldest ->
+    newest, for the given provider scope (None = clinic-wide). A snapshot
+    missing data for the requested provider is skipped rather than
+    inserted as 0 -- a gap in a provider's history shouldn't be read as
+    "zero that month".
+    """
+    extractor = VALUE_EXTRACTORS.get(domain_id)
+    if extractor is None:
+        return [], 0
+    extract_fn, uses_provider_breakdown = extractor
+
+    series = []
+    for path in _all_snapshot_paths(domain_id, snapshot_dir):
+        with open(path) as f:
+            payload = json.load(f)
+
+        if uses_provider_breakdown:
+            if provider is None:
+                summary = payload.get('clinic_summary')
+            else:
+                summary = payload.get('provider_breakdown', {}).get(provider)
+                if summary is None:
+                    continue  # no data for this provider in this snapshot
+            series.append(extract_fn(payload, summary))
+        else:
+            series.append(extract_fn(payload, None, provider=provider))
+
+    return series, len(series)
+
+
+def _trend_from_series(series, value_type):
+    """
+    series: this domain's headline value across every available snapshot,
+    oldest -> newest. Compares the latest value to the mean of all prior
+    values (with only 2 months on disk today, that's just "vs prior
+    month" -- this keeps working the same way once more months land, no
+    further changes needed).
+
+    Returns a dict of just the trend-related fields, to be merged into
+    whatever the domain reader already built: trend_direction, trend_pct
+    (count-type cards) or trend_pts (percent-type cards), trend_note, and
+    trend_series for the sparkline.
+
+    With fewer than 2 points (first month ever for this domain), there's
+    nothing to compare against -- falls back to the same "not yet
+    available" shape the cards already used before this change.
+    """
+    if len(series) < 2:
+        return {
+            'trend_direction': 'up',
+            'trend_pct': None,
+            'trend_pts': None,
+            'trend_note': 'prior-period trend not yet available',
+            'trend_series': series,
+        }
+
+    latest = series[-1]
+    prior_values = series[:-1]
+    prior_mean = mean(prior_values)
+    delta = latest - prior_mean
+    direction = 'up' if delta >= 0 else 'down'
+
+    n_prior = len(prior_values)
+    basis = 'prior month' if n_prior == 1 else f'{n_prior}-month avg'
+
+    if value_type == 'percent':
+        return {
+            'trend_direction': direction,
+            'trend_pct': None,
+            'trend_pts': round(delta, 1),
+            'trend_note': f'vs {basis}',
+            'trend_series': series,
+            'trend_delta': round(delta, 1),  # exact pts change, same as trend_pts here
+        }
+    else:
+        pct = (delta / prior_mean * 100) if prior_mean else 0.0
+        return {
+            'trend_direction': direction,
+            'trend_pct': round(pct, 1),
+            'trend_pts': None,
+            'trend_note': f'vs {basis}',
+            'trend_series': series,
+            'trend_delta': round(delta),  # exact count change, NOT reverse-derived from rounded trend_pct
+        }
 
 
 def _load_domain_card(domain_id, snapshot_dir, provider=None):
@@ -407,16 +591,23 @@ def _load_domain_card(domain_id, snapshot_dir, provider=None):
         # with zero rows in patient_detail naturally gets 0/0 -> 0.0%
         # rather than None, so no separate "no data for this provider"
         # fallback is needed here.
-        return reader(payload, provider=provider)
+        card = reader(payload, provider=provider)
+    elif provider is None:
+        card = reader(payload)
+    else:
+        provider_summary = payload.get('provider_breakdown', {}).get(provider)
+        if provider_summary is None:
+            return None
+        card = reader(payload, summary=provider_summary)
 
-    if provider is None:
-        return reader(payload)
-
-    provider_summary = payload.get('provider_breakdown', {}).get(provider)
-    if provider_summary is None:
-        return None
-
-    return reader(payload, summary=provider_summary)
+    # Overwrite the reader's placeholder trend fields with real ones
+    # computed from every snapshot on disk for this domain (see
+    # _domain_value_history / _trend_from_series above). Readers still
+    # build the "current value" fields on their own -- this only touches
+    # trend_direction/trend_pct/trend_pts/trend_note/trend_series.
+    series, _ = _domain_value_history(domain_id, snapshot_dir, provider=provider)
+    card.update(_trend_from_series(series, card['value_type']))
+    return card
 
 
 def _all_providers(snapshot_dir):

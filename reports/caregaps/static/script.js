@@ -158,7 +158,7 @@ function buildMetricCard(card) {
       <span>${trendText}</span>
       <span class="card-trend-note">(${escapeHtml(card.trend_note || '')})</span>
     </div>
-    <div class="card-sparkline">${buildSparkline(card.id, trendUp)}</div>
+    <div class="card-sparkline">${buildSparkline(card.id, trendUp, card.trend_series)}</div>
     ${isPlaceholder
       ? `<span class="card-link is-disabled">View Details <i data-lucide="arrow-right"></i></span>`
       : `<a class="card-link" href="${card.detail_url}" target="_blank" rel="noopener">View Details <i data-lucide="arrow-right"></i></a>`
@@ -179,14 +179,20 @@ function escapeHtml(str) {
 
 // --------------------------------------------------------------------------
 // Sparklines
-// Real per-domain modules should supply a `trend_series` array of monthly
-// values on each card; until snapshot history exists for a domain, this
-// generates a plausible-looking placeholder curve seeded from the card id
-// so it's stable across reloads (not random noise on every render).
+// Real per-domain modules supply a `trend_series` array of raw values
+// across every snapshot on disk (oldest -> newest, from
+// OverviewAggregator.py's _domain_value_history/_trend_from_series). When
+// present -- even with as few as 2 points -- that real history is drawn
+// instead of a fabricated curve. Only cards with no trend_series at all
+// (true placeholders: no domain module built yet) fall back to the old
+// seeded-random placeholder curve, so it's visually obvious which cards
+// are real vs. still pending.
 // --------------------------------------------------------------------------
 
-function buildSparkline(seed, trendUp) {
-  const points = seededSeries(seed, 12, trendUp);
+function buildSparkline(seed, trendUp, trendSeries) {
+  const points = (trendSeries && trendSeries.length >= 2)
+    ? trendSeries
+    : seededSeries(seed, 12, trendUp);
   const w = 260, h = 34, pad = 3;
   const min = Math.min(...points), max = Math.max(...points);
   const range = (max - min) || 1;
@@ -268,7 +274,7 @@ function renderTrendTable(cards) {
     const changeClass = trendUp ? 'change-positive' : 'change-negative';
     const changeVal = card.trend_pts != null
       ? `${trendUp ? '+' : ''}${card.trend_pts} pts`
-      : `${trendUp ? '+' : ''}${Math.round((card.value * card.trend_pct) / 100)}`;
+      : `${trendUp ? '+' : ''}${card.trend_delta != null ? card.trend_delta : Math.round((card.value * card.trend_pct) / 100)}`;
     const changePct = card.trend_pts != null
       ? `${trendUp ? '+' : ''}${card.trend_pct}%`
       : `${trendUp ? '+' : ''}${card.trend_pct}%`;
@@ -285,7 +291,7 @@ function renderTrendTable(cards) {
       <td>${currentVal}</td>
       <td class="${changeClass}">${changeVal}</td>
       <td class="${changeClass}">${changePct}</td>
-      <td class="sparkline-cell">${buildSparkline(card.id + '_table', trendUp)}</td>
+      <td class="sparkline-cell">${buildSparkline(card.id + '_table', trendUp, card.trend_series)}</td>
       <td class="direction-cell"><i data-lucide="${trendUp ? 'trending-up' : 'trending-down'}" class="${trendUp ? 'direction-up' : 'direction-down'}"></i></td>
     `;
     tbody.appendChild(tr);
