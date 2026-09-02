@@ -63,7 +63,7 @@ AUTHORIZED_USERS = {
             "productivity"
         ]
     },
-    "RenzoD": {
+    "renzod": {
         "role": "admin",
         "reports": [
             "productivity"
