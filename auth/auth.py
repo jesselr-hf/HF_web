@@ -6,7 +6,8 @@ AUTHORIZED_USERS = {
             "status",
             "ppd",
             "budget",
-            "caregaps"
+            "caregaps",
+            "productivity"
         ]
     },
     "avenigalla": {

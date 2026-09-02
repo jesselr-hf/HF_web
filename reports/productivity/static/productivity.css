@@ -1,0 +1,429 @@
+/* ==========================================================================
+   Provider Productivity Dashboard
+   ==========================================================================
+   Self-contained stylesheet (does not depend on caregaps.css — that shares
+   a different, older token system for now; caregaps.css may be migrated to
+   this palette later, but that's a separate pass).
+   ========================================================================== */
+
+:root {
+  /* Brand palette */
+  --color-teal: #0d6e6a;
+  --color-teal-light: #e6f2f1;
+  --color-teal-dark: #084b48;
+  --color-red: #b3372c;
+  --color-red-light: #fbeae8;
+  --color-red-dark: #8f2c23;
+  --color-gold: #c99a2e;
+  --color-gold-light: #faf3e0;
+  --color-gold-dark: #a67f22;
+
+  --bg: #f4f7fb;
+  --surface: #ffffff;
+  --surface-soft: #f8fafc;
+  --text: #172033;
+  --muted: #667085;
+  --border: #d9e2ec;
+  --primary: var(--color-teal);
+  --primary-dark: var(--color-teal-dark);
+  --primary-soft: var(--color-teal-light);
+  --accent: var(--color-gold);
+  --danger: var(--color-red);
+  --warning: var(--color-gold);
+  --success: #22c55e;
+  --purple: #8b5cf6;
+  --sidebar-bg: #12355b;
+  --sidebar-hover: #1d4f82;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.1);
+  --shadow-lg: 0 18px 40px rgba(15, 23, 42, 0.14);
+  --sidebar-width: 250px;
+  --space-xs: 6px;
+  --space-sm: 10px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --font-main: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "SF Mono", Consolas, "IBM Plex Mono", monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-main);
+  color: var(--text);
+  background: var(--bg);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+/* ---------------- App shell ---------------- */
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ---------------- Sidebar ---------------- */
+
+.sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-lg) var(--space-md);
+}
+
+.company-logo {
+  display: block;
+  width: min(190px, 100%);
+  height: auto;
+  margin: 0 auto var(--space-lg);
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  border: 5px solid rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+@media (max-width: 720px) {
+  .company-logo {
+    width: min(180px, 70%);
+    margin-bottom: var(--space-md);
+  }
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.6;
+}
+
+.sidebar-footer p { margin: 2px 0; }
+
+/* ---------------- Main column ---------------- */
+
+.main-column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------------- Top bar ---------------- */
+
+.top-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-lg) var(--space-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.top-bar-title h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-dark);
+  letter-spacing: -0.01em;
+}
+
+.top-bar-title .subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.top-bar-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+}
+
+.field-select {
+  font-family: var(--font-main);
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  min-width: 140px;
+}
+
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  margin-left: var(--space-xs);
+}
+
+.user-badge i { width: 22px; height: 22px; color: var(--muted); }
+
+/* ---------------- Rate basis switch ---------------- */
+/* The primary new interactive idea on this page -- kept as a visible pill
+   switch in the top bar rather than folded into a dropdown, since toggling
+   rate basis is the main new capability this report adds over the old
+   Excel version. */
+
+.rate-switch {
+  display: inline-flex;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.rate-switch-btn {
+  font-family: var(--font-main);
+  font-size: 12.5px;
+  font-weight: 650;
+  padding: 6px 16px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.rate-switch-btn.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.rate-switch-btn:not(.active):hover {
+  color: var(--text);
+}
+
+/* ---------------- Tab strip ---------------- */
+
+.tab-strip {
+  background: var(--sidebar-bg);
+  padding: 0 var(--space-xl);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tab {
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+}
+
+.tab.active {
+  background: var(--surface);
+  color: var(--primary-dark);
+}
+
+/* Quiet left-edge accent per department so Medical/Dental/BH stay visually
+   distinct while still reading as one tab strip. */
+.tab[data-dept="Medical"].active { box-shadow: inset 3px 0 0 var(--primary); }
+.tab[data-dept="Dental"].active  { box-shadow: inset 3px 0 0 var(--color-gold); }
+.tab[data-dept="BH"].active      { box-shadow: inset 3px 0 0 var(--purple); }
+
+/* ---------------- Content ---------------- */
+
+.content {
+  padding: var(--space-lg) var(--space-xl) 40px;
+  flex: 1;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--space-md);
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.trend-caption {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------------- Card grid ---------------- */
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+@media (max-width: 900px) { .card-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .card-grid { grid-template-columns: 1fr; } }
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.stat-card--met {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+.stat-card--met .stat-value { color: var(--primary-dark); }
+
+.stat-card--behind {
+  background: var(--color-red-light);
+  border-color: var(--danger);
+}
+.stat-card--behind .stat-value,
+.stat-card--behind .stat-label { color: var(--color-red-dark); }
+
+/* ---------------- Panel ---------------- */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.panel h2 {
+  margin: 0 0 var(--space-md);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+/* ---------------- Data table ---------------- */
+
+.data-table-wrap { overflow-x: auto; }
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.data-table th {
+  text-align: right;
+  font-weight: 650;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.data-table th:first-child {
+  text-align: left;
+}
+
+.data-table th:last-child {
+  border-right: none;
+}
+
+.data-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+  text-align: right;
+}
+
+.data-table td:last-child {
+  border-right: none;
+}
+
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+.data-table tbody tr:hover { background: var(--surface-soft); }
+
+.data-table .row-name { font-weight: 600; white-space: normal; text-align: left; }
+
+/* Mirrors the old Excel report's red/yellow/green conditional formatting
+   for "% of goal met" -- kept as a familiar signal for a report this
+   audience has read the same way for years. */
+.data-table .pct-cell {
+  font-family: var(--font-mono);
+  font-weight: 650;
+}
+
+.data-table .pct-met    { color: var(--success); }
+.data-table .pct-close  { color: var(--color-gold-dark); }
+.data-table .pct-behind { color: var(--danger); }
+
+.data-table .provider-total {
+  font-family: var(--font-mono);
+}
+
+.data-table .provider-goal {
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
+.table-footnote {
+  margin: var(--space-sm) 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.table-empty-note {
+  padding: 18px 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
