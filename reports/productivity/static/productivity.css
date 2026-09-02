@@ -407,6 +407,11 @@ body {
 .data-table .pct-close  { color: var(--color-gold-dark); }
 .data-table .pct-behind { color: var(--danger); }
 
+.data-table .provider-criteria {
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
 .data-table .provider-total {
   font-family: var(--font-mono);
 }

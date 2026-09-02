@@ -135,6 +135,10 @@
     `;
   }
 
+  function rateValueField(provider) {
+    return activeRate === "adjusted" ? provider.rate : provider.aspirational_rate;
+  }
+
   function renderProviderTable() {
     const thead = document.querySelector("#providerTable thead tr");
     const tbody = document.querySelector("#providerTable tbody");
@@ -142,7 +146,7 @@
 
     const dept = productivityData.departments[activeDept];
     if (!dept || !dept.providers.length) {
-      tbody.innerHTML = `<tr><td colspan="5" class="table-empty-note">No providers found for this department.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="table-empty-note">No providers found for this department.</td></tr>`;
       return;
     }
 
@@ -153,7 +157,7 @@
     const periodKeys = periods.map((p) => (activePeriod === "monthly" ? p.month : p.quarter));
 
     thead.innerHTML =
-      `<th>Provider</th>` +
+      `<th>Provider</th><th>Weeks</th><th>Clinical Hours</th><th>Rate</th>` +
       periodKeys.map((k, i) => `<th>${periodLabel(periods[i])}</th>`).join("") +
       `<th>Total</th><th>Goal</th><th>% of Goal</th>`;
 
@@ -190,6 +194,9 @@
       return `
         <tr>
           <td class="row-name">${provider.provider}</td>
+          <td class="provider-criteria">${provider.weeks}</td>
+          <td class="provider-criteria">${provider.clinical_hours}</td>
+          <td class="provider-criteria">${rateValueField(provider)}</td>
           ${periodCells}
           <td class="provider-total">${fmtNum(provider.total_encounters)}</td>
           <td class="provider-goal">${fmtNum(goalField(provider))}</td>
