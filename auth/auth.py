@@ -10,13 +10,13 @@ AUTHORIZED_USERS = {
             "productivity"
         ]
     },
-    "avenigalla": {
-        "role": "admin",
-        "reports": [
-            "pophealth", 
-            "status"
-        ]
-    },
+    # "avenigalla": {
+    #     "role": "admin",
+    #     "reports": [
+    #         "pophealth", 
+    #         "status"
+    #     ]
+    # },
     "pvenigalla": {
         "role": "provider",
         "reports": [
@@ -39,7 +39,8 @@ AUTHORIZED_USERS = {
             "status",
             "ppd", 
             "budget",
-            "caregaps"
+            "caregaps",
+            "productivity"
         ]
     },
     "ljones": {
@@ -48,7 +49,8 @@ AUTHORIZED_USERS = {
             "pophealth", 
             "status",
             "ppd",
-            "budget"
+            "budget",
+            "productivity"
         ]
     },
     "aniyibizi": {
@@ -57,23 +59,26 @@ AUTHORIZED_USERS = {
             "pophealth", 
             "status",
             "ppd",
-            "budget"
+            "budget",
+            "productivity"
+        ]
+    },
+    "RenzoD": {
+        "role": "admin",
+        "reports": [
+            "productivity"
         ]
     },
     "atgadmin": {
         "role": "admin",
         "reports": [
-            "pophealth", 
-            "status",
-            "ppd"
+            "status"
         ]
     },
     "crichards": {
         "role": "admin",
-        "reports": [
-            "pophealth", 
-            "status",
-            "ppd"
+        "reports": [ 
+            "status"
         ]
     },
     "botelhom": {
@@ -89,7 +94,8 @@ AUTHORIZED_USERS = {
         "reports": [
             "pophealth", 
             "status",
-            "ppd"
+            "ppd",
+            "productivity"
         ]
     },
     "kcollins": {
@@ -98,16 +104,8 @@ AUTHORIZED_USERS = {
             "pophealth", 
             "status",
             "ppd", 
-            "budget"
-        ]
-    },
-    "aniyibizi": {
-        "role": "provider",
-        "reports": [
-            "pophealth", 
-            "status",
-            "ppd", 
-            "budget"
+            "budget", 
+            "productivity"
         ]
     },
     "pjohnson": {
@@ -116,7 +114,8 @@ AUTHORIZED_USERS = {
             "pophealth", 
             "status",
             "ppd", 
-            "budget"
+            "budget",
+            "productivity"
         ]
     },
     "brownd": {
@@ -131,14 +130,16 @@ AUTHORIZED_USERS = {
         "reports": [ 
             "status",
             "ppd", 
-            "budget"
+            "budget",
+            "productivity"
         ]
     },
         "khalida@healthfirstfr.org": {
                 "role": "provider",
         "reports": [ 
             "status",
-            "budget"
+            "budget",
+            "productivity"
         ]
     },
 

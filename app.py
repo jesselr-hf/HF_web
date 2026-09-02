@@ -2,7 +2,7 @@ import logging
 from functools import wraps
 from pathlib import Path
 
-from flask import Flask, request, send_from_directory
+from flask import Flask, request, send_from_directory, render_template, url_for, redirect
 
 from auth.auth import AUTHORIZED_USERS
 
@@ -112,27 +112,18 @@ def require_report_access(report_name):
 @app.route("/")
 def home():
     username, permissions = get_user_permissions()
-
+ 
     if permissions is None:
         return "Access denied", 403
-
-    return f"""
-    <h1>HealthFirst Family Care Center</h1>
-    <h2>Data Analytics Reporting Server Directory</h2>
-    <h2>Welcome {username}</h2>
-
-    <p>Server Status: A - OK</p>
-
-    <ul>
-        <li><a href="https://healthfirstfr.sharepoint.com/sites/DataAnalysis">Create a data service request</a></li>
-        <li><a href="/ppd">PPD Dashboard</a></li>
-        <li><a href="/pophealth">Pophealth Dashboard</a></li>
-        <li><a href="/caregaps">Care Gap Dashboard</a></li>
-        <li><a href="/budget">Budget Dashboard</a></li>
-    
-
-    </ul>
-    """
+ 
+    return render_template("home.html", username=username)
+ 
+ 
+# Browsers request /favicon.ico directly regardless of the <link rel="icon">
+# tag in the page head, so redirect it to the actual file in static/.
+@app.route("/favicon.ico")
+def favicon():
+    return redirect(url_for("static", filename="heart.png"))
 
 
 # ---------------------------------------------------------------------------
@@ -299,23 +290,7 @@ def budget_data(filename):
 # ---------------------------------------------------------------------------
 # Care Gaps
 # ---------------------------------------------------------------------------
-# Add this block to app.py, in the same position/style as the other reports
-# (status / ppd / pophealth / budget). Requires "caregaps" to be added to
-# each authorized user's "reports" list in auth/auth.py's AUTHORIZED_USERS.
-#
-# File layout expected under SHARE / "reports" / "caregaps":
-#   static/caregaps.html   <- overview page (this is the entry point)
-#   static/caregaps.css
-#   static/script.js
-#   static/obesity.html    <- per-domain detail pages, added as built
-#   static/obesity.css
-#   static/obesity.js
-#   snapshots/obesity_2026_08.json   <- dated snapshots written by Obesity.py
-#                                        (sibling of static/, NOT under data/)
-#
-# The frontend (script.js/obesity.js) fetches its data via the "latest"
-# route below, which resolves the current dated filename server-side so
-# the frontend never needs to know today's exact filename.
+
 
 @app.route("/caregaps")
 @app.route("/caregaps/")

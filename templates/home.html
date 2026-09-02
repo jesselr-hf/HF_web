@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HFFCC Data Reporting</title>
+    <link rel="icon" href="{{ url_for('static', filename='heart.png') }}">
+    <style>
+        :root {
+            --navy: #101f3c;
+            --ink: #1a2233;
+            --ink-muted: #64748a;
+            --line: #e4e8ef;
+            --surface: #ffffff;
+            --surface-sunk: #f5f7fa;
+            --accent: #1e7a3c;
+            --accent-soft: #e2f5e8;
+            --gold: #c68a1f;
+            --font-body: 'IBM Plex Sans', -apple-system, Segoe UI, sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: var(--font-body);
+            color: var(--ink);
+            background: var(--surface-sunk);
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .app-shell {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            background: var(--navy);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 18px;
+        }
+
+        .company-logo {
+            display: block;
+            width: min(190px, 100%);
+            height: auto;
+            margin: 0 auto 24px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 5px solid #cddcf0;
+            background-color: #d9e2ec;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            font-size: 11px;
+            color: #8a95ab;
+            line-height: 1.6;
+        }
+
+        .main-column {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-bar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--line);
+            padding: 20px 28px;
+        }
+
+        .top-bar h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--navy);
+            letter-spacing: -0.01em;
+        }
+
+        .top-bar .subtitle {
+            margin: 4px 0 0;
+            color: var(--ink-muted);
+            font-size: 13.5px;
+        }
+
+        .content {
+            padding: 22px 28px 40px;
+            flex: 1;
+        }
+
+        .status-bar {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85em;
+            color: var(--accent);
+            margin-bottom: 20px;
+        }
+
+        .status-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background-color: var(--accent);
+            display: inline-block;
+        }
+
+        .welcome {
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        .section-heading {
+            margin-top: 30px;
+            margin-bottom: 14px;
+            border-left: 4px solid var(--accent);
+            padding-left: 10px;
+        }
+
+        .section-heading h2 {
+            margin: 0;
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--navy);
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 18px 20px;
+        }
+
+        .report-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 8px 0;
+        }
+
+        .report-list li {
+            padding: 6px 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .report-list li:last-child {
+            border-bottom: none;
+        }
+
+        .report-list a {
+            color: var(--navy);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .report-list a:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
+        .access-note {
+            font-size: 0.85em;
+            color: var(--ink-muted);
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <div class="sidebar">
+            <img class="company-logo" src="{{ url_for('static', filename='logo.png') }}" alt="HFFCC logo">
+            <div class="sidebar-footer">
+                <p>HealthFirst Family Care Center</p>
+                <p>Data Analytics Reporting Server</p>
+            </div>
+        </div>
+
+        <div class="main-column">
+            <div class="top-bar">
+                <h1>HFFCC Data Reporting</h1>
+                <p class="subtitle">Server directory and access requests</p>
+            </div>
+
+            <div class="content">
+                <p class="status-bar"><span class="status-dot"></span>Server Status: OK</p>
+
+                <p class="welcome">Welcome, {{ username }}.</p>
+
+                <div class="section-heading">
+                    <h2>Reports</h2>
+                </div>
+                <div class="panel">
+                    <ul class="report-list">
+                        <li><a href="/ppd">PPD Dashboard</a></li>
+                        <li><a href="/pophealth">Pophealth Dashboard</a></li>
+                        <li><a href="/caregaps">Care Gap Dashboard</a></li>
+                        <li><a href="/budget">Budget Dashboard</a></li>
+                        <li><a href="/productivity">Provider Productivity</a></li>
+                    </ul>
+                    <p class="access-note">
+                        You're seeing this list because you're a registered user of
+                        this server. Access to each report is checked individually
+                        &mdash; if you click through to one you're not authorized
+                        for, you'll get an access denied notice rather than the
+                        report itself.
+                    </p>
+                </div>
+
+                <div class="section-heading">
+                    <h2>Need a new report or a change to an existing one?</h2>
+                </div>
+                <div class="panel">
+                    <a href="https://healthfirstfr.sharepoint.com/sites/DataAnalysis">
+                        Submit a data service request
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
