@@ -41,7 +41,8 @@ AUTHORIZED_USERS = {
             "ppd", 
             "budget",
             "caregaps",
-            "productivity"
+            "productivity",
+            "languageservices"
         ]
     },
     "ljones": {
@@ -51,7 +52,8 @@ AUTHORIZED_USERS = {
             "status",
             "ppd",
             "budget",
-            "productivity"
+            "productivity",
+            "languageservices"
         ]
     },
     "aniyibizi": {
@@ -61,7 +63,8 @@ AUTHORIZED_USERS = {
             "status",
             "ppd",
             "budget",
-            "productivity"
+            "productivity",
+            "languageservices"
         ]
     },
     "renzod": {
