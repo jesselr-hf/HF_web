@@ -399,6 +399,62 @@ def productivity_data_latest():
     return send_from_directory(str(data_dir), latest.name)
 
 
+#Language Services Route
+
+@app.route("/languageservices")
+@app.route("/languageservices/")
+@require_report_access("languageservices")
+def languageservices():
+    username, _ = get_user_permissions()
+
+    languageservices_file = SHARE / "reports" / "languageservices" / "static" / "language.html"
+    if not languageservices_file.exists():
+        return "<h1>Language Services dashboard unavailable.</h1>", 404
+
+    html = languageservices_file.read_text(encoding="utf-8")
+    html = html.replace("<head>", '<head>\n<base href="/languageservices/">', 1)
+    html = html.replace("__USERNAME__", username)
+
+    return html
+
+
+@app.route("/languageservices/<path:filename>")
+@require_report_access("languageservices")
+def languageservices_static(filename):
+    if filename in ("", "language.html"):
+        return languageservices()
+
+    return send_from_directory(
+        str(SHARE / "reports" / "languageservices" / "static"), filename
+    )
+
+
+@app.route("/languageservices/data/latest")
+@require_report_access("languageservices")
+def languageservices_data_latest():
+    """
+    Serves the most recent dated snapshot (newest file matching
+    data/language_report_*.json) without the frontend needing to know
+    today's exact filename.
+
+    Snapshot filenames are expected in the language_report_{YYYY}.json
+    format written by MiConnect_language_parser_web.py's main(). Since
+    that format sorts correctly as a plain string (four-digit year), the
+    lexicographically-largest matching filename is also the most recent
+    one -- no need to parse dates out of the filename. Same resolution
+    logic as caregaps_data_latest() / productivity_data_latest().
+    """
+    data_dir = SHARE / "reports" / "languageservices" / "data"
+
+    matches = sorted(data_dir.glob("language_report_*.json"))
+    if not matches:
+        return "No language report snapshot found", 404
+
+    latest = matches[-1]
+    return send_from_directory(str(data_dir), latest.name)
+
+
+
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)

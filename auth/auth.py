@@ -7,7 +7,8 @@ AUTHORIZED_USERS = {
             "ppd",
             "budget",
             "caregaps",
-            "productivity"
+            "productivity",
+            "languageservices"
         ]
     },
     # "avenigalla": {
@@ -67,6 +68,12 @@ AUTHORIZED_USERS = {
         "role": "admin",
         "reports": [
             "productivity"
+        ]
+    },
+    "DLegros": {
+        "role": "admin",
+        "reports": [
+            "status"
         ]
     },
     "atgadmin": {
@@ -134,12 +141,19 @@ AUTHORIZED_USERS = {
             "productivity"
         ]
     },
-        "khalida@healthfirstfr.org": {
+        "khalida": {
                 "role": "provider",
         "reports": [ 
             "status",
             "budget",
             "productivity"
+        ]
+    },
+        "tchorzf": {                
+                "role": "admin",
+        "reports": [ 
+            "status",
+            "languageservices"
         ]
     },
 
