@@ -20,15 +20,25 @@
       <p class="welcome" id="username-badge">Welcome, __USERNAME__</p>
     </header>
 
-    <section class="panel" id="panel-encounters">
-      <div class="panel-head panel-head--encounters">
-        <h2>Primary Language Count by Encounter</h2>
-        <select id="department-select" aria-label="Department"></select>
-      </div>
-      <div class="table-scroll">
-        <table id="table-encounters"></table>
-      </div>
-    </section>
+    <div class="panel-row panel-row--priority">
+      <section class="panel" id="panel-encounters">
+        <div class="panel-head panel-head--encounters">
+          <h2>Primary Language Count by Encounter</h2>
+          <select id="department-select" aria-label="Department"></select>
+        </div>
+        <div class="table-scroll">
+          <table id="table-encounters"></table>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-chart">
+        <div class="panel-head panel-head--encounters">
+          <h2>Top Languages by Share</h2>
+          <span class="panel-note">% of encounters, selected department</span>
+        </div>
+        <div id="chart-combined" class="chart"></div>
+      </section>
+    </div>
 
     <section class="panel" id="panel-combined">
       <div class="panel-head panel-head--combined">
@@ -68,11 +78,12 @@
       </section>
     </div>
 
-    <section class="panel" id="panel-chart">
+    <section class="panel" id="panel-stacked">
       <div class="panel-head">
-        <h2>Top Languages by Total</h2>
+        <h2>Interpreter Source Comparison</h2>
+        <span class="panel-note">Outsourced vs In House</span>
       </div>
-      <div id="chart-combined" class="chart"></div>
+      <div id="chart-stacked" class="chart chart--stacked"></div>
     </section>
   </div>
 

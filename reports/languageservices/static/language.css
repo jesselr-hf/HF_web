@@ -46,7 +46,7 @@ body {
 }
 
 .logo {
-  height: 88px;
+  height: 150px;
   width: auto;
 }
 
@@ -240,7 +240,7 @@ tfoot td:first-child {
 
 .bar-row {
   display: grid;
-  grid-template-columns: 160px 1fr 70px;
+  grid-template-columns: 160px 1fr 100px;
   align-items: center;
   gap: 10px;
   margin-bottom: 8px;
@@ -262,6 +262,127 @@ tfoot td:first-child {
 
 .bar-value {
   text-align: right;
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar-value-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* Stacked vertical bar chart: Outsourced vs In House */
+
+.chart--stacked {
+  padding-top: 8px;
+}
+
+.stack-legend {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.legend-swatch--out { background: var(--gold); }
+.legend-swatch--in { background: var(--blue); }
+
+.stack-chart-area {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  height: 240px;
+}
+
+.stack-axis {
+  position: relative;
+  height: 100%;
+}
+
+.stack-axis-label {
+  position: absolute;
+  right: 8px;
+  transform: translateY(50%);
+  font-size: 11px;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+.stack-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 0 8px;
+  position: relative;
+}
+
+.stack-gridline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--border);
+  pointer-events: none;
+}
+
+.stack-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 10px;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.stack-bar {
+  width: 100%;
+  max-width: 28px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.stack-seg--out {
+  background: var(--gold);
+}
+
+.stack-seg--in {
+  background: var(--blue);
+}
+
+.stack-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  margin-top: 6px;
+  height: 90px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chart-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 20px 0;
 }

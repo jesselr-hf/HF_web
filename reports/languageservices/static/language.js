@@ -67,6 +67,7 @@ function populateDepartmentSelect(data) {
       ? data.encounters.overall
       : data.encounters.by_department[val] || [];
     renderEncountersTable(records);
+    renderChart(records);
   });
 }
 
@@ -111,25 +112,128 @@ function renderAllMetricTables() {
   renderMetricTable("table-outsourced", DATA.outsourced, currentMetric);
   renderMetricTable("table-inhouse", DATA.in_house, currentMetric);
   renderMetricTable("table-combined", DATA.combined, currentMetric);
-  renderChart(DATA.combined, currentMetric);
+  renderStackedChart(DATA.outsourced, DATA.in_house, currentMetric);
 }
 
-// --- Simple horizontal bar chart (top languages by total) -------------
+// --- Simple horizontal bar chart (top languages by encounter share) ---
+// Uses Encounters data (same source as the Primary Language table above
+// it), NOT interpreter usage -- English has no interpreter records at all
+// (it's never routed to Outsourced/In-House), so this chart must stay on
+// Encounters or English silently disappears despite being the largest
+// language. Not driven by the Encounters/Minutes toggle, since encounter
+// counts have no "minutes" equivalent; it follows the department filter
+// instead, matching the table directly above it.
 
-function renderChart(records, metric) {
-  const totalKey = metric === "calls" ? "total_calls" : "total_minutes";
-  const top = [...records].sort((a, b) => b[totalKey] - a[totalKey]).slice(0, 10);
-  const max = top.length ? top[0][totalKey] : 1;
+function renderChart(records) {
+  const grandTotal = records.reduce((sum, r) => sum + r.total, 0);
+  const top = [...records].sort((a, b) => b.total - a.total).slice(0, 10);
+  const maxPct = top.length && grandTotal > 0 ? (top[0].total / grandTotal) * 100 : 0;
 
   const container = document.getElementById("chart-combined");
   container.innerHTML = top.map(r => {
-    const pct = max > 0 ? Math.round((r[totalKey] / max) * 100) : 0;
+    const pct = grandTotal > 0 ? (r.total / grandTotal) * 100 : 0;
+    // Bar width is relative to the largest share shown, so the biggest bar
+    // always fills the row -- the label carries the true percent of all
+    // languages combined, not just these 10.
+    const widthPct = maxPct > 0 ? (pct / maxPct) * 100 : 0;
     return `<div class="bar-row">
         <div>${r.language}</div>
-        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
-        <div class="bar-value">${fmt(r[totalKey])}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${widthPct}%"></div></div>
+        <div class="bar-value">${pct.toFixed(1)}%<span class="bar-value-sub">${fmt(r.total)}</span></div>
       </div>`;
   }).join("");
+}
+
+// --- Stacked vertical bar chart: Outsourced vs In House per language --
+
+function renderStackedChart(outsourced, inHouse, metric) {
+  const totalKey = metric === "calls" ? "total_calls" : "total_minutes";
+  const unit = metric === "calls" ? "" : " min";
+
+  // Merge by language -- Outsourced and In House don't share an identical
+  // language taxonomy (e.g. "Portuguese" vs "Brazilian Portuguese" are
+  // tracked separately upstream), so this merges on exact name match only,
+  // same as every other table on this page.
+  const byLang = new Map();
+  outsourced.forEach(r => {
+    byLang.set(r.language, { language: r.language, out: r[totalKey], in: 0 });
+  });
+  inHouse.forEach(r => {
+    const existing = byLang.get(r.language);
+    if (existing) {
+      existing.in = r[totalKey];
+    } else {
+      byLang.set(r.language, { language: r.language, out: 0, in: r[totalKey] });
+    }
+  });
+
+  const merged = [...byLang.values()]
+    .map(r => ({ ...r, total: r.out + r.in }))
+    .filter(r => r.total > 0)
+    .sort((a, b) => b.total - a.total);
+
+  const container = document.getElementById("chart-stacked");
+  if (!merged.length) {
+    container.innerHTML = `<p class="chart-empty">No data available.</p>`;
+    return;
+  }
+
+  const max = merged[0].total;
+  // Round the axis ceiling up to a clean step above the tallest bar.
+  const step = niceStep(max);
+  const axisMax = Math.ceil(max / step) * step;
+  const gridlines = [];
+  for (let v = 0; v <= axisMax; v += step) gridlines.push(v);
+
+  const barsHtml = merged.map(r => {
+    const outPct = axisMax > 0 ? (r.out / axisMax) * 100 : 0;
+    const inPct = axisMax > 0 ? (r.in / axisMax) * 100 : 0;
+    return `<div class="stack-col" title="${r.language}: ${fmt(r.out)}${unit} outsourced, ${fmt(r.in)}${unit} in-house">
+        <div class="stack-bar">
+          <div class="stack-seg stack-seg--in" style="height:${inPct}%"></div>
+          <div class="stack-seg stack-seg--out" style="height:${outPct}%"></div>
+        </div>
+        <div class="stack-label">${r.language}</div>
+      </div>`;
+  }).join("");
+
+  const axisHtml = gridlines.slice().reverse().map(v => {
+    const fromBottomPct = axisMax > 0 ? (v / axisMax) * 100 : 0;
+    return `<div class="stack-axis-label" style="bottom:${fromBottomPct}%">${fmt(v)}</div>`;
+  }).join("");
+
+  const gridlinesHtml = gridlines.map(v => {
+    const fromBottomPct = axisMax > 0 ? (v / axisMax) * 100 : 0;
+    return `<div class="stack-gridline" style="bottom:${fromBottomPct}%"></div>`;
+  }).join("");
+
+  container.innerHTML = `
+    <div class="stack-legend">
+      <span class="legend-item"><span class="legend-swatch legend-swatch--out"></span>Outsourced</span>
+      <span class="legend-item"><span class="legend-swatch legend-swatch--in"></span>In House</span>
+    </div>
+    <div class="stack-chart-area">
+      <div class="stack-axis">${axisHtml}</div>
+      <div class="stack-bars">
+        ${gridlinesHtml}
+        ${barsHtml}
+      </div>
+    </div>`;
+}
+
+// Picks a round grid step (1/2/5 x a power of ten) for a given max value,
+// e.g. max=87000 -> step=20000, so the axis reads 0/20K/40K/60K/80K/100K.
+function niceStep(max) {
+  if (max <= 0) return 1;
+  const roughStep = max / 5;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const normalized = roughStep / magnitude;
+  let niceNormalized;
+  if (normalized < 1.5) niceNormalized = 1;
+  else if (normalized < 3) niceNormalized = 2;
+  else if (normalized < 7) niceNormalized = 5;
+  else niceNormalized = 10;
+  return niceNormalized * magnitude;
 }
 
 // --- Toggle wiring ------------------------------------------------------
@@ -159,6 +263,7 @@ async function init() {
   renderHeader(DATA);
   populateDepartmentSelect(DATA);
   renderEncountersTable(DATA.encounters.overall);
+  renderChart(DATA.encounters.overall);
   wireToggle();
   renderAllMetricTables();
 }
