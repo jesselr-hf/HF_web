@@ -282,7 +282,7 @@ body {
 .chart-wrap {
   position: relative;
   width: 100%;
-  max-height: 420px;
+  height: 480px;
 }
 
 .card-grid {
@@ -294,6 +294,43 @@ body {
 
 @media (max-width: 900px) { .card-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px) { .card-grid { grid-template-columns: 1fr; } }
+
+.vaccine-panel {
+  margin-bottom: 24px;
+}
+
+.vaccine-row {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.vaccine-rate {
+  font-family: var(--font-mono);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.vaccine-rate.rate-low { color: var(--up-red); }
+
+.vaccine-breakdown {
+  display: flex;
+  gap: 24px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.vaccine-breakdown strong {
+  color: var(--ink);
+  font-family: var(--font-mono);
+}
+
+.vaccine-unavailable {
+  color: var(--ink-muted);
+  font-size: 13px;
+}
 
 .lower-grid {
   display: grid;

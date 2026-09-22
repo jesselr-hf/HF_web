@@ -54,12 +54,20 @@
           <h2 id="chartTitle">Weekly New Flu Diagnoses by Season</h2>
         </div>
         <div class="chart-wrap">
-          <canvas id="trendChart" height="90"></canvas>
+          <canvas id="trendChart"></canvas>
         </div>
       </section>
 
       <!-- ---------- CURRENT SEASON STAT ROW ---------- -->
       <section class="card-grid" id="statCards" aria-label="Current season summary"></section>
+
+      <!-- ---------- EMPLOYEE VACCINATION ---------- -->
+      <section class="panel vaccine-panel" id="vaccinePanel" aria-label="Employee flu vaccination rate">
+        <div class="section-header">
+          <h2>Employee Flu Vaccination</h2>
+        </div>
+        <div id="vaccineContent"></div>
+      </section>
 
       <!-- ---------- CURRENT SEASON DETAIL (table beneath chart) ---------- -->
       <div class="lower-grid">

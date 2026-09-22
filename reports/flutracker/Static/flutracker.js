@@ -1,306 +1,327 @@
 /* ==========================================================================
-   Flu Tracker -- styles
-   ==========================================================================
-   This page is intentionally open to everyone on the network with no login
-   gate, unlike caregaps/pophealth/budget/etc. Because of that, this file
-   does NOT @import caregaps.css the way other domain pages do -- caregaps'
-   static assets are served behind require_report_access, so an anonymous
-   visitor's browser would fail to load that stylesheet. Instead, the same
-   shared tokens/components are copied in below, kept in sync by hand if
-   the shared look changes.
+   Flu Tracker
+   Fetches the flutracker JSON snapshot and renders:
+     - a multi-line chart, one line per flu season, aligned by week number
+       since Aug 1 (so seasons on different calendar dates compare directly)
+     - current-season stat cards (total, peak week, provider count, season label)
+     - current-season weekly and provider detail tables beneath the chart
    ========================================================================== */
 
-:root {
-  --navy: #101f3c;
-  --ink: #1a2233;
-  --ink-muted: #64748a;
-  --line: #e4e8ef;
-  --surface: #ffffff;
-  --surface-sunk: #f5f7fa;
+const DATA_URL = '/flutracker/data/latest';
 
-  --accent: #1e7a3c;
-  --accent-soft: #e2f5e8;
+// One color per season slot (oldest -> newest). If a 4th prior season is
+// ever added to the SQL trend window, extend this list.
+const SEASON_COLORS = ['#94a3b8', '#2563eb', '#c0392b'];
 
-  --up-red: #c0392b;
-  --down-green: #1e7a3c;
+let REPORT = null;
+let chartInstance = null;
 
-  --radius: 8px;
-  --radius-sm: 6px;
-  --max-width: 1200px;
+document.addEventListener('DOMContentLoaded', () => {
+  loadData();
+});
 
-  --font-body: 'IBM Plex Sans', -apple-system, Segoe UI, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+async function loadData() {
+  try {
+    const res = await fetch(DATA_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    REPORT = await res.json();
+  } catch (err) {
+    console.error('Flu Tracker: failed to load', DATA_URL, err);
+    renderLoadError(err);
+    return;
+  }
+
+  document.getElementById('dataAsOf').textContent =
+    'Data as of ' + formatDateTime(REPORT.generated_at);
+
+  const nameEl = document.getElementById('userName');
+  if (nameEl.textContent.trim() === '__USERNAME__') {
+    nameEl.textContent = 'Guest';
+  }
+
+  // Each render function runs independently — if the chart library fails
+  // to load (e.g. CDN blocked or slow on a restrictive network) or the
+  // chart itself throws, the stat cards and tables still render from the
+  // same JSON. A dashboard that goes fully blank because of one optional
+  // visual is worse than one that degrades gracefully.
+  try {
+    renderChart(REPORT.trend);
+  } catch (err) {
+    console.error('Flu Tracker: chart failed to render', err);
+    renderChartError();
+  }
+
+  try { renderStatCards(REPORT.current_season); } catch (err) { console.error('Flu Tracker: stat cards failed', err); }
+  try { renderVaccinePanel(REPORT.employee_vaccine); } catch (err) { console.error('Flu Tracker: vaccine panel failed', err); }
+  try { renderWeeklyTable(REPORT.current_season); } catch (err) { console.error('Flu Tracker: weekly table failed', err); }
+  try { renderProviderTable(REPORT.current_season); } catch (err) { console.error('Flu Tracker: provider table failed', err); }
+
+  if (window.lucide) lucide.createIcons();
 }
 
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  font-family: var(--font-body);
-  color: var(--ink);
-  background: var(--surface-sunk);
-  font-size: 14px;
-  line-height: 1.45;
+function renderLoadError(err) {
+  const content = document.querySelector('.content');
+  const banner = document.createElement('div');
+  banner.style.background = '#fde3e3';
+  banner.style.border = '1px solid #c0392b';
+  banner.style.borderRadius = '8px';
+  banner.style.padding = '14px 18px';
+  banner.style.marginBottom = '18px';
+  banner.style.color = '#c0392b';
+  banner.style.fontSize = '13px';
+  banner.textContent = `Could not load ${DATA_URL}: ${err.message}. Check that a flutracker_*.json snapshot exists in the Data directory.`;
+  content.insertBefore(banner, content.firstChild);
 }
 
-.visually-hidden {
-  position: absolute;
-  width: 1px; height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
+function formatDateTime(ts) {
+  if (!ts) return '—';
+  // generated_at from FluTracker.py is "YYYY-MM-DD HH:MM:SS", not ISO —
+  // replace the space with "T" so Date() parses it reliably cross-browser.
+  const d = new Date(ts.replace(' ', 'T'));
+  if (isNaN(d)) return ts;
+  return d.toLocaleString(undefined, {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit'
+  });
 }
 
-/* ---------------- Panel ---------------- */
-
-.panel {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 18px 20px;
+function formatDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso + 'T00:00:00');
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-.panel h2 {
-  margin: 0 0 14px;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--navy);
-}
+// --------------------------------------------------------------------------
+// Trend chart
+// --------------------------------------------------------------------------
 
-/* ---------------- Metric / stat cards ---------------- */
-
-.metric-card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.card-label {
-  font-size: 12.5px;
-  font-weight: 650;
-  color: var(--ink);
-  line-height: 1.3;
-}
-
-.card-value {
-  font-family: var(--font-mono);
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.card-sub {
-  font-size: 11.5px;
-  color: var(--ink-muted);
-}
-
-/* ---------------- Generic data table ---------------- */
-
-.data-table-wrap { overflow-x: auto; max-height: 420px; overflow-y: auto; }
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12.5px;
-}
-
-.data-table th {
-  text-align: left;
-  font-weight: 650;
-  color: var(--ink-muted);
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--line);
-  white-space: nowrap;
-  position: sticky;
-  top: 0;
-  background: var(--surface);
-}
-
-.data-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--line);
-  white-space: nowrap;
-}
-
-.data-table tbody tr:last-child td { border-bottom: none; }
-.data-table tbody tr:hover { background: var(--accent-soft); }
-
-/* ==========================================================================
-   Layout: app shell, sidebar, top bar, tab strip, content
-   ========================================================================== */
-
-.app-shell {
-  display: flex;
-  min-height: 100vh;
-}
-
-.sidebar {
-  width: 220px;
-  flex-shrink: 0;
-  background: var(--navy);
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  padding: 20px 18px;
-}
-
-.company-logo {
-  display: block;
-  width: min(190px, 100%);
-  height: auto;
-  margin: 0 auto 24px;
-  object-fit: contain;
-  border-radius: var(--radius);
-  border: 5px solid #cddcf0;
-  background-color: #d9e2ec;
-}
-
-@media (max-width: 720px) {
-  .company-logo {
-    width: min(180px, 70%);
-    margin-bottom: 16px;
+function renderChartError() {
+  const wrap = document.querySelector('.chart-wrap');
+  if (wrap) {
+    wrap.innerHTML = '<p style="color:#64748a; font-size:13px; padding:20px 0;">' +
+      'Chart could not be displayed. The rest of the page is still showing current data.</p>';
   }
 }
 
-.sidebar-footer {
-  margin-top: auto;
-  font-size: 11px;
-  color: #8a95ab;
-  line-height: 1.6;
+function renderChart(trend) {
+  if (typeof Chart === 'undefined') {
+    throw new Error('Chart.js did not load');
+  }
+
+  const seasons = (trend && trend.seasons) || [];
+  const canvas = document.getElementById('trendChart');
+  if (!canvas || seasons.length === 0) return;
+
+  // Chart is restricted to Sep 1 - May 31 (the meaningful flu-activity
+  // window) even though the underlying season data runs the full Aug 1 -
+  // Jul 31 year. Jun/Jul/Aug are consistently near-zero across all three
+  // seasons and were flattening the whole chart, making the actual winter
+  // peaks unreadable. This ONLY affects what the chart displays — the
+  // weekly/provider tables and vaccine panel still use the full data as
+  // returned by the JSON.
+  //
+  // Filtering is done by each week's actual week_ending month/day (not by
+  // a hardcoded week-number range) so this stays correct even if the
+  // week-alignment logic in FluTracker.py's build_season_weekly_trend()
+  // ever changes.
+  function inChartWindow(weekEndingStr) {
+    const d = new Date(weekEndingStr + 'T00:00:00');
+    const month = d.getMonth() + 1; // 1-12
+    // Sep(9) through Dec(12), or Jan(1) through May(5)
+    return month >= 9 || month <= 5;
+  }
+
+  const filteredSeasons = seasons.map(season => ({
+    ...season,
+    weeks: season.weeks.filter(w => inChartWindow(w.week_ending)),
+  }));
+
+  // x-axis labels come from the actual week_ending dates of whichever
+  // season has the most in-window weeks, so labels read as real dates
+  // rather than a Wk-N count that no longer starts at week 1.
+  const referenceSeason = filteredSeasons.reduce(
+    (longest, s) => (s.weeks.length > (longest ? longest.weeks.length : -1) ? s : longest),
+    null
+  );
+  const labels = referenceSeason
+    ? referenceSeason.weeks.map(w => formatDate(w.week_ending))
+    : [];
+
+  const datasets = filteredSeasons.map((season, idx) => ({
+    label: season.label,
+    data: season.weeks.map(w => w.count),
+    borderColor: SEASON_COLORS[idx % SEASON_COLORS.length],
+    backgroundColor: SEASON_COLORS[idx % SEASON_COLORS.length],
+    borderWidth: idx === filteredSeasons.length - 1 ? 3 : 2, // emphasize current season
+    pointRadius: 2,
+    tension: 0.25,
+    spanGaps: false,
+  }));
+
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { usePointStyle: true } },
+        tooltip: {
+          callbacks: {
+            title: (items) => {
+              if (!items.length) return '';
+              const i = items[0].dataIndex;
+              const dsIndex = items[0].datasetIndex;
+              const week = filteredSeasons[dsIndex] && filteredSeasons[dsIndex].weeks[i];
+              return week ? `Week ending ${formatDate(week.week_ending)}` : items[0].label;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Week Ending (Sep \u2013 May)' },
+          ticks: { maxRotation: 60, minRotation: 45, autoSkip: true, maxTicksLimit: 20 },
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'New Flu Diagnoses' },
+          ticks: { precision: 0 },
+        },
+      },
+    },
+  });
 }
 
-.sidebar-footer p { margin: 2px 0; }
+// --------------------------------------------------------------------------
+// Stat cards
+// --------------------------------------------------------------------------
 
-.main-column {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
+function renderStatCards(currentSeason) {
+  const grid = document.getElementById('statCards');
+  grid.innerHTML = '';
+
+  const weekly = (currentSeason && currentSeason.weekly) || [];
+  const daily = (currentSeason && currentSeason.daily) || [];
+  const providers = (currentSeason && currentSeason.provider_summary) || [];
+
+  const totalDiagnoses = daily.reduce((sum, d) => sum + d.count, 0);
+  const peakWeek = weekly.reduce((max, w) => (w.count > (max ? max.count : -1) ? w : max), null);
+
+  document.getElementById('chartTitle').textContent =
+    `Weekly New Flu Diagnoses by Season`;
+  document.getElementById('weeklyTableTitle').textContent =
+    `Weekly Counts (${(currentSeason && currentSeason.label) || 'Current Season'})`;
+
+  const cards = [
+    { label: 'Season', value: (currentSeason && currentSeason.label) || '—' },
+    { label: 'Total New Flu Diagnoses (Season to Date)', value: totalDiagnoses.toLocaleString() },
+    {
+      label: 'Peak Week',
+      value: peakWeek ? peakWeek.count.toLocaleString() : '—',
+      sub: peakWeek ? `Week ending ${formatDate(peakWeek.week_ending)}` : null,
+    },
+    { label: 'Providers with Flu Diagnoses', value: providers.length.toLocaleString() },
+  ];
+
+  cards.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'metric-card';
+    el.innerHTML = `
+      <div class="card-label">${escapeHtml(c.label)}</div>
+      <div class="card-value">${c.value}</div>
+      ${c.sub ? `<div class="card-sub">${escapeHtml(c.sub)}</div>` : ''}
+    `;
+    grid.appendChild(el);
+  });
 }
 
-.top-bar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  padding: 20px 28px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 16px;
+// --------------------------------------------------------------------------
+// Employee vaccine panel
+// --------------------------------------------------------------------------
+// TODO: 70% is a placeholder threshold for "low rate" red styling, not an
+// HFFCC-specific target — confirm the actual internal goal (if one exists)
+// and adjust VACCINE_RATE_LOW_THRESHOLD accordingly, or remove the
+// color-coding entirely if no target rate is defined.
+const VACCINE_RATE_LOW_THRESHOLD = 70;
+
+function renderVaccinePanel(vaccine) {
+  const container = document.getElementById('vaccineContent');
+  if (!vaccine || !vaccine.available) {
+    container.innerHTML = `<p class="vaccine-unavailable">Employee vaccination data is not currently available.</p>`;
+    return;
+  }
+
+  const rate = vaccine.vaccination_rate_pct;
+  const rateDisplay = rate == null ? '—' : `${rate}%`;
+  const rateClass = (rate != null && rate < VACCINE_RATE_LOW_THRESHOLD) ? 'vaccine-rate rate-low' : 'vaccine-rate';
+
+  container.innerHTML = `
+    <div class="vaccine-row">
+      <div class="${rateClass}">${rateDisplay}</div>
+      <div class="vaccine-breakdown">
+        <span><strong>${vaccine.vaccinated_count.toLocaleString()}</strong> vaccinated</span>
+        <span><strong>${vaccine.declined_count.toLocaleString()}</strong> declined</span>
+        <span><strong>${vaccine.total_recorded.toLocaleString()}</strong> total recorded</span>
+      </div>
+    </div>
+    <p class="vaccine-unavailable" style="margin-top:10px;">
+      Rate reflects employees with a recorded vaccination or declination on file
+      (vaccinated &divide; (vaccinated + declined)); employees with no record either way are not included.
+    </p>
+  `;
 }
 
-.top-bar-title h1 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--navy);
-  letter-spacing: -0.01em;
+// --------------------------------------------------------------------------
+// Weekly / provider tables (current season)
+// --------------------------------------------------------------------------
+
+function renderWeeklyTable(currentSeason) {
+  const tbody = document.querySelector('#weeklyTable tbody');
+  tbody.innerHTML = '';
+
+  const weekly = (currentSeason && currentSeason.weekly) || [];
+  // Most recent week first, easier to scan for a manager checking in weekly.
+  [...weekly].reverse().forEach(w => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatDate(w.week_starting)}</td>
+      <td>${formatDate(w.week_ending)}</td>
+      <td>${w.count.toLocaleString()}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (weekly.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3">No data for the current season yet.</td></tr>`;
+  }
 }
 
-.top-bar-title .subtitle {
-  margin: 4px 0 0;
-  color: var(--ink-muted);
-  font-size: 13.5px;
+function renderProviderTable(currentSeason) {
+  const tbody = document.querySelector('#providerTable tbody');
+  tbody.innerHTML = '';
+
+  const providers = (currentSeason && currentSeason.provider_summary) || [];
+  providers.forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(p.provider)}</td>
+      <td>${p.count.toLocaleString()}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (providers.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="2">No data for the current season yet.</td></tr>`;
+  }
 }
 
-.top-bar-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.user-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--ink);
-  margin-left: 8px;
-}
-
-.user-badge i { width: 22px; height: 22px; color: var(--ink-muted); }
-
-.tab-strip {
-  background: var(--navy);
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.tab {
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 600;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px 6px 0 0;
-  background: transparent;
-  color: #b6c0d6;
-  cursor: pointer;
-}
-
-.tab.active {
-  background: var(--surface);
-  color: var(--navy);
-}
-
-.content {
-  padding: 22px 28px 40px;
-  flex: 1;
-}
-
-.section-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 14px;
-}
-
-.section-header h2 {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--navy);
-}
-
-/* ==========================================================================
-   Flu Tracker page-specific layout
-   ========================================================================== */
-
-.chart-panel {
-  margin-bottom: 24px;
-}
-
-.chart-wrap {
-  position: relative;
-  width: 100%;
-  max-height: 420px;
-}
-
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 24px;
-}
-
-@media (max-width: 900px) { .card-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 600px) { .card-grid { grid-template-columns: 1fr; } }
-
-.lower-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-}
-
-@media (max-width: 1100px) {
-  .lower-grid { grid-template-columns: 1fr; }
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
