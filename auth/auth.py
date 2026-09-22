@@ -30,7 +30,10 @@ AUTHORIZED_USERS = {
             "pophealth", 
             "status",
             "ppd",
-            "caregaps"
+            "caregaps",
+            "budget",
+            "productivity",
+            "languageservices"
         ]
     },
     "medeirosl":{        
@@ -50,19 +53,22 @@ AUTHORIZED_USERS = {
         "reports": [
             "pophealth", 
             "status",
-            "ppd",
+            "ppd", 
             "budget",
+            "caregaps",
             "productivity",
             "languageservices"
         ]
     },
+
     "aniyibizi": {
         "role": "admin",
         "reports": [
             "pophealth", 
             "status",
-            "ppd",
+            "ppd", 
             "budget",
+            "caregaps",
             "productivity",
             "languageservices"
         ]
@@ -70,10 +76,53 @@ AUTHORIZED_USERS = {
     "renzod": {
         "role": "admin",
         "reports": [
-            "productivity"
+            "pophealth", 
+            "status",
+            "ppd", 
+            "budget",
+            "caregaps",
+            "productivity",
+            "languageservices"
         ]
     },
-    "DLegros": {
+    "kcollins": {
+        "role": "provider",
+        "reports": [
+            "pophealth", 
+            "status",
+            "ppd", 
+            "budget",
+            "caregaps",
+            "productivity",
+            "languageservices"
+        ]
+    },
+    "pjohnson": {
+        "role": "admin",
+        "reports": [
+            "pophealth", 
+            "status",
+            "ppd", 
+            "budget",
+            "caregaps",
+            "productivity",
+            "languageservices"
+        ]
+    },
+    "khalida": {
+        "role": "provider",
+        "reports": [ 
+            "pophealth", 
+            "status",
+            "ppd", 
+            "budget",
+            "caregaps",
+            "productivity",
+            "languageservices"
+        ]
+    },
+
+    "dlegros": {
         "role": "admin",
         "reports": [
             "status"
@@ -96,7 +145,8 @@ AUTHORIZED_USERS = {
         "reports": [
             "pophealth", 
             "status",
-            "ppd"
+            "ppd",
+            "caregaps",
         ]
     },
     "simoneaud": {
@@ -108,26 +158,7 @@ AUTHORIZED_USERS = {
             "productivity"
         ]
     },
-    "kcollins": {
-        "role": "provider",
-        "reports": [
-            "pophealth", 
-            "status",
-            "ppd", 
-            "budget", 
-            "productivity"
-        ]
-    },
-    "pjohnson": {
-        "role": "admin",
-        "reports": [
-            "pophealth", 
-            "status",
-            "ppd", 
-            "budget",
-            "productivity"
-        ]
-    },
+
     "brownd": {
         "role": "admin",
         "reports": [
@@ -144,14 +175,7 @@ AUTHORIZED_USERS = {
             "productivity"
         ]
     },
-        "khalida": {
-                "role": "provider",
-        "reports": [ 
-            "status",
-            "budget",
-            "productivity"
-        ]
-    },
+
         "tchorzf": {                
                 "role": "admin",
         "reports": [ 

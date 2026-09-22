@@ -455,6 +455,65 @@ def languageservices_data_latest():
 
 
 
+# ---------------------------------------------------------------------------
+# Flu Tracker
+# ---------------------------------------------------------------------------
+# Unlike every other report route, FluTracker has NO require_report_access
+# gate — it's intentionally open to everyone on the network, not limited to
+# AUTHORIZED_USERS or a per-report permission entry. The global
+# audit_request after_request hook still logs every request as usual
+# (with user=UNKNOWN for anyone lacking an X-Remote-User header), but no
+# 403 is ever issued here.
+#
+# TODO: confirm this is really meant to skip AD-authentication entirely
+# (fully public to anyone who can reach the box) rather than just skipping
+# the per-report permission check while still requiring *some* authenticated
+# AD user — these are different postures and this implements the former.
+
+@app.route("/flutracker")
+@app.route("/flutracker/")
+def flutracker():
+    username, _ = get_user_permissions()
+    display_name = username if username else "Guest"
+
+    flutracker_file = SHARE / "reports" / "flutracker" / "Static" / "flutracker.html"
+    if not flutracker_file.exists():
+        return "<h1>Flu Tracker dashboard unavailable.</h1>", 404
+
+    html = flutracker_file.read_text(encoding="utf-8")
+    html = html.replace("<head>", '<head>\n<base href="/flutracker/">', 1)
+    html = html.replace("__USERNAME__", display_name)
+
+    return html
+
+
+@app.route("/flutracker/<path:filename>")
+def flutracker_static(filename):
+    if filename in ("", "flutracker.html"):
+        return flutracker()
+
+    return send_from_directory(
+        str(SHARE / "reports" / "flutracker" / "Static"), filename
+    )
+
+
+@app.route("/flutracker/data/latest")
+def flutracker_data_latest():
+    """
+    Serves the most recent dated snapshot (newest file matching
+    Data/flutracker_*.json) without the frontend needing to know today's
+    exact filename. Same resolution logic as caregaps_data_latest() /
+    productivity_data_latest() / languageservices_data_latest().
+    """
+    data_dir = SHARE / "reports" / "flutracker" / "Data"
+
+    matches = sorted(data_dir.glob("flutracker_*.json"))
+    if not matches:
+        return "No flu tracker snapshot found", 404
+
+    latest = matches[-1]
+    return send_from_directory(str(data_dir), latest.name)
+
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)

@@ -1,0 +1,306 @@
+/* ==========================================================================
+   Flu Tracker -- styles
+   ==========================================================================
+   This page is intentionally open to everyone on the network with no login
+   gate, unlike caregaps/pophealth/budget/etc. Because of that, this file
+   does NOT @import caregaps.css the way other domain pages do -- caregaps'
+   static assets are served behind require_report_access, so an anonymous
+   visitor's browser would fail to load that stylesheet. Instead, the same
+   shared tokens/components are copied in below, kept in sync by hand if
+   the shared look changes.
+   ========================================================================== */
+
+:root {
+  --navy: #101f3c;
+  --ink: #1a2233;
+  --ink-muted: #64748a;
+  --line: #e4e8ef;
+  --surface: #ffffff;
+  --surface-sunk: #f5f7fa;
+
+  --accent: #1e7a3c;
+  --accent-soft: #e2f5e8;
+
+  --up-red: #c0392b;
+  --down-green: #1e7a3c;
+
+  --radius: 8px;
+  --radius-sm: 6px;
+  --max-width: 1200px;
+
+  --font-body: 'IBM Plex Sans', -apple-system, Segoe UI, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--surface-sunk);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+/* ---------------- Panel ---------------- */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+
+.panel h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+/* ---------------- Metric / stat cards ---------------- */
+
+.metric-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-label {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.card-value {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.card-sub {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+}
+
+/* ---------------- Generic data table ---------------- */
+
+.data-table-wrap { overflow-x: auto; max-height: 420px; overflow-y: auto; }
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.data-table th {
+  text-align: left;
+  font-weight: 650;
+  color: var(--ink-muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+}
+
+.data-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover { background: var(--accent-soft); }
+
+/* ==========================================================================
+   Layout: app shell, sidebar, top bar, tab strip, content
+   ========================================================================== */
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--navy);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 18px;
+}
+
+.company-logo {
+  display: block;
+  width: min(190px, 100%);
+  height: auto;
+  margin: 0 auto 24px;
+  object-fit: contain;
+  border-radius: var(--radius);
+  border: 5px solid #cddcf0;
+  background-color: #d9e2ec;
+}
+
+@media (max-width: 720px) {
+  .company-logo {
+    width: min(180px, 70%);
+    margin-bottom: 16px;
+  }
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  font-size: 11px;
+  color: #8a95ab;
+  line-height: 1.6;
+}
+
+.sidebar-footer p { margin: 2px 0; }
+
+.main-column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  padding: 20px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.top-bar-title h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--navy);
+  letter-spacing: -0.01em;
+}
+
+.top-bar-title .subtitle {
+  margin: 4px 0 0;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+}
+
+.top-bar-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-left: 8px;
+}
+
+.user-badge i { width: 22px; height: 22px; color: var(--ink-muted); }
+
+.tab-strip {
+  background: var(--navy);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tab {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  color: #b6c0d6;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: var(--surface);
+  color: var(--navy);
+}
+
+.content {
+  padding: 22px 28px 40px;
+  flex: 1;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+/* ==========================================================================
+   Flu Tracker page-specific layout
+   ========================================================================== */
+
+.chart-panel {
+  margin-bottom: 24px;
+}
+
+.chart-wrap {
+  position: relative;
+  width: 100%;
+  max-height: 420px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 900px) { .card-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .card-grid { grid-template-columns: 1fr; } }
+
+.lower-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 1100px) {
+  .lower-grid { grid-template-columns: 1fr; }
+}
