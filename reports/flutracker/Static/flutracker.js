@@ -15,6 +15,7 @@ const SEASON_COLORS = ['#94a3b8', '#2563eb', '#c0392b'];
 
 let REPORT = null;
 let chartInstance = null;
+let massDphChartInstance = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   loadData();
@@ -51,7 +52,15 @@ async function loadData() {
     renderChartError();
   }
 
+  try {
+    renderMassDphChart(REPORT.mass_dph);
+  } catch (err) {
+    console.error('Flu Tracker: Mass DPH chart failed to render', err);
+    renderMassDphChartError();
+  }
+
   try { renderStatCards(REPORT.current_season); } catch (err) { console.error('Flu Tracker: stat cards failed', err); }
+  try { renderMassDphStatus(REPORT.mass_dph); } catch (err) { console.error('Flu Tracker: Mass DPH status failed', err); }
   try { renderVaccinePanel(REPORT.employee_vaccine); } catch (err) { console.error('Flu Tracker: vaccine panel failed', err); }
   try { renderWeeklyTable(REPORT.current_season); } catch (err) { console.error('Flu Tracker: weekly table failed', err); }
   try { renderProviderTable(REPORT.current_season); } catch (err) { console.error('Flu Tracker: provider table failed', err); }
@@ -198,6 +207,128 @@ function renderChart(trend) {
 }
 
 // --------------------------------------------------------------------------
+// Mass DPH statewide ILI% trend chart
+// --------------------------------------------------------------------------
+// Kept as its own chart, not merged onto the diagnosis-count chart above:
+// different units (percent vs. count) and a different underlying weekly
+// grid (MDPH's weeks run Sunday-start/Saturday-end; the SQL-derived trend
+// uses Monday-start/Sunday-end via pandas' W-SUN resample — see
+// MassFluData.py's docstring). Forcing both onto one set of week-number
+// x-axis labels would silently misalign the two lines by up to several
+// days each week. Each chart uses its own real week_ending dates instead.
+
+function renderMassDphChartError() {
+  const wrap = document.querySelector('.mass-dph-chart-wrap');
+  if (wrap) {
+    wrap.innerHTML = '<p style="color:#64748a; font-size:13px; padding:20px 0;">' +
+      'Chart could not be displayed. The rest of the page is still showing current data.</p>';
+  }
+}
+
+function renderMassDphChart(massDph) {
+  if (typeof Chart === 'undefined') {
+    throw new Error('Chart.js did not load');
+  }
+
+  const trend = massDph && massDph.statewide_ili_trend;
+  const panel = document.getElementById('massDphChartPanel');
+  const canvas = document.getElementById('massDphChart');
+
+  if (!trend || !trend.available || !trend.seasons || trend.seasons.length === 0) {
+    if (panel) panel.style.display = 'none';
+    return;
+  }
+  if (panel) panel.style.display = '';
+  if (!canvas) return;
+
+  // Same Sep 1 - May 31 display window as the diagnosis chart, filtered
+  // by each week's actual week_ending month (see renderChart() above for
+  // the same reasoning — Jun/Jul/Aug ILI% is consistently low and was
+  // flattening the chart).
+  function inChartWindow(weekEndingStr) {
+    const d = new Date(weekEndingStr + 'T00:00:00');
+    const month = d.getMonth() + 1;
+    return month >= 9 || month <= 5;
+  }
+
+  const seasons = trend.seasons;
+  const filteredSeasons = seasons.map(season => ({
+    ...season,
+    weeks: season.weeks.filter(w => inChartWindow(w.week_ending)),
+  }));
+
+  const referenceSeason = filteredSeasons.reduce(
+    (longest, s) => (s.weeks.length > (longest ? longest.weeks.length : -1) ? s : longest),
+    null
+  );
+  const labels = referenceSeason
+    ? referenceSeason.weeks.map(w => formatDate(w.week_ending))
+    : [];
+
+  const datasets = filteredSeasons.map((season, idx) => ({
+    label: season.label,
+    data: season.weeks.map(w => w.value),
+    borderColor: SEASON_COLORS[idx % SEASON_COLORS.length],
+    backgroundColor: SEASON_COLORS[idx % SEASON_COLORS.length],
+    borderWidth: idx === filteredSeasons.length - 1 ? 3 : 2,
+    pointRadius: 2,
+    tension: 0.25,
+    spanGaps: false,
+  }));
+
+  if (massDphChartInstance) massDphChartInstance.destroy();
+
+  massDphChartInstance = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { usePointStyle: true } },
+        tooltip: {
+          callbacks: {
+            title: (items) => {
+              if (!items.length) return '';
+              const i = items[0].dataIndex;
+              const dsIndex = items[0].datasetIndex;
+              const week = filteredSeasons[dsIndex] && filteredSeasons[dsIndex].weeks[i];
+              return week ? `Week ending ${formatDate(week.week_ending)}` : items[0].label;
+            },
+            label: (item) => `${item.dataset.label}: ${item.formattedValue}%`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Week Ending (Sep \u2013 May)' },
+          ticks: { maxRotation: 60, minRotation: 45, autoSkip: true, maxTicksLimit: 20 },
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: '% of Outpatient Visits (ILI)' },
+        },
+      },
+    },
+  });
+}
+
+function renderMassDphStatus(massDph) {
+  const el = document.getElementById('massDphRegionalStatus');
+  if (!el) return;
+
+  const status = massDph && massDph.regional_status;
+  if (!status || !status.available) {
+    el.textContent = '';
+    return;
+  }
+
+  el.innerHTML = `Southeast region (MA DPH) activity level: <strong>${escapeHtml(status.activity_level)}</strong> ` +
+    `<span class="card-sub">as of week ending ${formatDate(status.week_ending)}</span>`;
+}
+
+// --------------------------------------------------------------------------
 // Stat cards
 // --------------------------------------------------------------------------
 
@@ -213,7 +344,7 @@ function renderStatCards(currentSeason) {
   const peakWeek = weekly.reduce((max, w) => (w.count > (max ? max.count : -1) ? w : max), null);
 
   document.getElementById('chartTitle').textContent =
-    `Weekly New Flu Diagnoses by Season`;
+    `HealthFirst Weekly New Flu Diagnoses by Season`;
   document.getElementById('weeklyTableTitle').textContent =
     `Weekly Counts (${(currentSeason && currentSeason.label) || 'Current Season'})`;
 
