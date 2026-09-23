@@ -396,13 +396,12 @@ function renderVaccinePanel(vaccine) {
       <div class="${rateClass}">${rateDisplay}</div>
       <div class="vaccine-breakdown">
         <span><strong>${vaccine.vaccinated_count.toLocaleString()}</strong> vaccinated</span>
-        <span><strong>${vaccine.declined_count.toLocaleString()}</strong> declined</span>
+        
         <span><strong>${vaccine.total_recorded.toLocaleString()}</strong> total recorded</span>
       </div>
     </div>
     <p class="vaccine-unavailable" style="margin-top:10px;">
-      Rate reflects employees with a recorded vaccination or declination on file
-      (vaccinated &divide; (vaccinated + declined)); employees with no record either way are not included.
+      Rate reflects employees with a recorded vaccination / total recorded for the vaccination period; employees with no record for the vaccination period are not included.
     </p>
   `;
 }
